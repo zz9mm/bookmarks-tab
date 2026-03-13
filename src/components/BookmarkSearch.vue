@@ -32,63 +32,38 @@
   </div>
 </template>
 
-<script>
-import { ref, watch } from 'vue'
+<script setup>
+import { ref } from 'vue'
+import { getFavicon } from '../composables/useFavicon'
 
-export default {
-  name: 'BookmarkSearch',
-  props: {
-    bookmarks: {
-      type: Array,
-      default: () => []
-    }
-  },
-  setup(props) {
-    const searchQuery = ref('')
-    const searchResults = ref([])
-    const showDropdown = ref(false)
-
-    const getDomain = (url) => {
-      try {
-        return new URL(url).hostname
-      } catch {
-        return ''
-      }
-    }
-
-    const getFavicon = (url) => {
-      const domain = getDomain(url)
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-    }
-
-    const handleSearch = () => {
-      const query = searchQuery.value.toLowerCase()
-      showDropdown.value = true
-
-      if (!query) {
-        searchResults.value = []
-        return
-      }
-
-      searchResults.value = props.bookmarks
-        .filter(b => b.title.toLowerCase().includes(query))
-        .slice(0, 8)
-    }
-
-    const handleBlur = () => {
-      setTimeout(() => {
-        showDropdown.value = false
-      }, 200)
-    }
-
-    return {
-      searchQuery,
-      searchResults,
-      showDropdown,
-      getFavicon,
-      handleSearch,
-      handleBlur
-    }
+const props = defineProps({
+  bookmarks: {
+    type: Array,
+    default: () => []
   }
+})
+
+const searchQuery = ref('')
+const searchResults = ref([])
+const showDropdown = ref(false)
+
+const handleSearch = () => {
+  const query = searchQuery.value.toLowerCase()
+  showDropdown.value = true
+
+  if (!query) {
+    searchResults.value = []
+    return
+  }
+
+  searchResults.value = props.bookmarks
+    .filter(b => b.title.toLowerCase().includes(query))
+    .slice(0, 8)
+}
+
+const handleBlur = () => {
+  setTimeout(() => {
+    showDropdown.value = false
+  }, 200)
 }
 </script>

@@ -18,35 +18,19 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'FolderItem',
-  props: {
-    folder: {
-      type: Object,
-      required: true
-    },
-    collapsedFolders: {
-      type: Array,
-      default: () => []
-    }
+<script setup>
+import { getFavicon } from '../composables/useFavicon'
+
+const props = defineProps({
+  folder: {
+    type: Object,
+    required: true
   },
-  emits: ['toggle'],
-  setup() {
-    const getDomain = (url) => {
-      try {
-        return new URL(url).hostname
-      } catch {
-        return ''
-      }
-    }
-
-    const getFavicon = (url) => {
-      const domain = getDomain(url)
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-    }
-
-    return { getFavicon }
+  collapsedFolders: {
+    type: Array,
+    default: () => []
   }
-}
+})
+
+defineEmits(['toggle'])
 </script>

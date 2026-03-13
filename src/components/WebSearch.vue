@@ -28,81 +28,55 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { searchEngines, getEngineIcon } from '../composables/useFavicon'
 
-export default {
-  name: 'WebSearch',
-  props: {
-    defaultEngine: {
-      type: String,
-      default: 'bing'
-    }
-  },
-  emits: ['engineChange'],
-  setup(props, { emit }) {
-    const searchQuery = ref('')
-    const currentEngine = ref(props.defaultEngine)
-    const showEngineMenu = ref(false)
-    const dropdownRef = ref(null)
+const props = defineProps({
+  defaultEngine: {
+    type: String,
+    default: 'bing'
+  }
+})
 
-    const searchEngines = {
-      bing: { url: 'https://www.bing.com/search?q=', name: 'Bing' },
-      baidu: { url: 'https://www.baidu.com/s?wd=', name: '百度' },
-      google: { url: 'https://www.google.com/search?q=', name: 'Google' }
-    }
+const emit = defineEmits(['engineChange'])
 
-    const getEngineIcon = (engine) => {
-      const domain = engine === 'baidu' ? 'baidu.com' : `${engine}.com`
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-    }
+const searchQuery = ref('')
+const currentEngine = ref(props.defaultEngine)
+const showEngineMenu = ref(false)
+const dropdownRef = ref(null)
 
-    const getEngineName = (engine) => searchEngines[engine]?.name || 'Bing'
+const getEngineName = (engine) => searchEngines[engine]?.name || 'Bing'
 
-    const toggleEngineMenu = () => {
-      showEngineMenu.value = !showEngineMenu.value
-    }
+const toggleEngineMenu = () => {
+  showEngineMenu.value = !showEngineMenu.value
+}
 
-    const selectEngine = (engine) => {
-      currentEngine.value = engine
-      showEngineMenu.value = false
-      emit('engineChange', engine)
-    }
+const selectEngine = (engine) => {
+  currentEngine.value = engine
+  showEngineMenu.value = false
+  emit('engineChange', engine)
+}
 
-    const performSearch = () => {
-      const query = searchQuery.value.trim()
-      if (query) {
-        const engine = searchEngines[currentEngine.value]
-        window.open(engine.url + encodeURIComponent(query), '_blank')
-      }
-    }
-
-    const handleClickOutside = (e) => {
-      if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
-        showEngineMenu.value = false
-      }
-    }
-
-    onMounted(() => {
-      document.addEventListener('click', handleClickOutside)
-    })
-
-    onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside)
-    })
-
-    return {
-      searchQuery,
-      currentEngine,
-      showEngineMenu,
-      dropdownRef,
-      searchEngines,
-      getEngineIcon,
-      getEngineName,
-      toggleEngineMenu,
-      selectEngine,
-      performSearch
-    }
+const performSearch = () => {
+  const query = searchQuery.value.trim()
+  if (query) {
+    const engine = searchEngines[currentEngine.value]
+    window.open(engine.url + encodeURIComponent(query), '_blank')
   }
 }
+
+const handleClickOutside = (e) => {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
+    showEngineMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>

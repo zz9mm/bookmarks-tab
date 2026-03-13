@@ -35,58 +35,33 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed } from 'vue'
 import FolderItem from './FolderItem.vue'
+import { getFavicon } from '../composables/useFavicon'
 
-export default {
-  name: 'FolderTree',
-  components: { FolderItem },
-  props: {
-    folders: {
-      type: Array,
-      default: () => []
-    }
-  },
-  setup(props) {
-    const filterQuery = ref('')
-    const collapsedFolders = ref([])
+const props = defineProps({
+  folders: {
+    type: Array,
+    default: () => []
+  }
+})
 
-    const filteredFolders = computed(() => {
-      if (!filterQuery.value) return props.folders
-      const query = filterQuery.value.toLowerCase()
-      return props.folders.filter(f => f.title.toLowerCase().includes(query))
-    })
+const filterQuery = ref('')
+const collapsedFolders = ref([])
 
-    const getDomain = (url) => {
-      try {
-        return new URL(url).hostname
-      } catch {
-        return ''
-      }
-    }
+const filteredFolders = computed(() => {
+  if (!filterQuery.value) return props.folders
+  const query = filterQuery.value.toLowerCase()
+  return props.folders.filter(f => f.title.toLowerCase().includes(query))
+})
 
-    const getFavicon = (url) => {
-      const domain = getDomain(url)
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-    }
-
-    const toggleFolder = (id) => {
-      const index = collapsedFolders.value.indexOf(id)
-      if (index >= 0) {
-        collapsedFolders.value.splice(index, 1)
-      } else {
-        collapsedFolders.value.push(id)
-      }
-    }
-
-    return {
-      filterQuery,
-      filteredFolders,
-      collapsedFolders,
-      getFavicon,
-      toggleFolder
-    }
+const toggleFolder = (id) => {
+  const index = collapsedFolders.value.indexOf(id)
+  if (index >= 0) {
+    collapsedFolders.value.splice(index, 1)
+  } else {
+    collapsedFolders.value.push(id)
   }
 }
 </script>
