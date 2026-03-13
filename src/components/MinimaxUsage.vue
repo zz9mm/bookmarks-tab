@@ -19,11 +19,12 @@
             <div class="model-name">{{ model.model_name }}</div>
             <div class="model-stats">
               <div class="stat-item">
-                <span class="stat-label">剩余次数:</span>
-                <span class="stat-value">{{ model.current_interval_usage_count }} / {{ model.current_interval_total_count }}</span>
+                <span class="stat-label">已使用:</span>
+                <span class="stat-value">{{ model.current_interval_total_count - model.current_interval_usage_count }} / {{ model.current_interval_total_count }}</span>
               </div>
               <div class="stat-progress">
-                <div class="progress-bar" :style="{ width: (model.current_interval_usage_count / model.current_interval_total_count * 100) + '%' }"></div>
+                <div class="progress-bar" :style="{ width: ((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) + '%' }"></div>
+                <span class="progress-percent">{{ Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) }}%</span>
               </div>
             </div>
           </div>
@@ -252,6 +253,7 @@ defineExpose({ fetchUsage })
   border-radius: 2px;
   overflow: hidden;
   margin-top: 4px;
+  position: relative;
 }
 
 .progress-bar {
@@ -259,6 +261,14 @@ defineExpose({ fetchUsage })
   background: #4f46e5;
   border-radius: 2px;
   transition: width 0.3s;
+}
+
+.progress-percent {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  font-size: 12px;
+  color: #666;
 }
 
 .minimax-empty {
