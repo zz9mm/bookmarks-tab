@@ -145,12 +145,10 @@ const formatNumber = (num) => {
 
 const formatTime = (timestamp) => {
   if (!timestamp) return '-'
-  return new Date(timestamp).toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const date = new Date(timestamp)
+  const hours = String(date.getUTCHours()).padStart(2, '0')
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}(UTC+8)`
 }
 
 const formatRemainsTime = (seconds) => {
