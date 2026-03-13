@@ -10,12 +10,6 @@ body {
   min-height: 100vh;
 }
 
-.container {
-  max-width: 1620px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
 /* Settings Button */
 .settings-btn {
   position: fixed;
@@ -380,24 +374,6 @@ body {
   min-width: 0;
 }
 
-/* Sidebar scrollbar */
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 3px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: #ccc;
-}
-
 /* Module Box */
 .module-box {
   padding: 12px;
@@ -406,15 +382,6 @@ body {
 }
 
 /* Search Section */
-.search-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .search-wrapper {
   position: relative;
 }
@@ -437,35 +404,6 @@ body {
 
 .search-dropdown.show {
   display: block;
-}
-
-.search-dropdown-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: background 0.15s;
-  text-decoration: none;
-  color: inherit;
-}
-
-.search-dropdown-item:hover {
-  background: #f5f7fa;
-}
-
-.search-dropdown-item .bookmark-icon {
-  width: 16px;
-  height: 16px;
-  margin-right: 10px;
-  flex-shrink: 0;
-}
-
-.search-dropdown-item .bookmark-title {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
 }
 
 .search-result-item {
@@ -736,25 +674,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Bookmarks Section */
-.bookmarks-section {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.section-title {
-  padding: 12px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-#bookmarks-list {
-  padding: 12px;
 }
 
 /* Folder */

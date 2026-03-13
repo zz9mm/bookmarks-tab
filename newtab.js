@@ -25,7 +25,6 @@ function getDomain(url) {
 
 let currentEngine = 'bing';
 let allBookmarks = [];
-let subfoldersCache = [];
 
 // Module templates
 const moduleTemplates = {
@@ -104,9 +103,6 @@ let rightModules = [];
 // Module configs - keyed by "side-index"
 let moduleConfigs = {};
 
-// Current editing module
-let currentEditingModule = null;
-
 // Initialize
 document.addEventListener('DOMContentLoaded', init);
 
@@ -119,12 +115,11 @@ function init() {
   document.getElementById('settings-btn').onclick = function(e) {
     e.stopPropagation();
     var panel = document.getElementById('settings-panel');
-    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    console.log('Settings button clicked, panel display:', panel.style.display);
+    panel.classList.toggle('show');
   };
 
   document.onclick = function(e) {
-    document.getElementById('settings-panel').style.display = 'none';
+    document.getElementById('settings-panel').classList.remove('show');
     document.getElementById('module-config-panel').style.display = 'none';
   };
 
@@ -175,7 +170,6 @@ function getModuleConfig(side, index, moduleType) {
 }
 
 function showModuleConfigPanel(side, index, moduleType) {
-  currentEditingModule = { side, index, moduleType };
   const configPanel = document.getElementById('module-config-panel');
   const configContent = document.getElementById('config-content');
   const config = getModuleConfig(side, index, moduleType);
@@ -196,6 +190,17 @@ function showModuleConfigPanel(side, index, moduleType) {
         </select>
       </div>
     `;
+  } else if (moduleType === 'web-search') {
+    html = `
+      <div class="config-item">
+        <label>默认搜索引擎</label>
+        <select id="module-config-engine">
+          <option value="bing" ${config.engine === 'bing' ? 'selected' : ''}>Bing</option>
+          <option value="baidu" ${config.engine === 'baidu' ? 'selected' : ''}>百度</option>
+          <option value="google" ${config.engine === 'google' ? 'selected' : ''}>Google</option>
+        </select>
+      </div>
+    `;
   }
 
   configContent.innerHTML = html;
@@ -209,6 +214,19 @@ function showModuleConfigPanel(side, index, moduleType) {
       saveModuleConfigs();
       renderLayout();
       loadBookmarks();
+    });
+  }
+
+  const engineSelect = document.getElementById('module-config-engine');
+  if (engineSelect) {
+    engineSelect.addEventListener('change', (e) => {
+      const key = getModuleConfigKey(side, index);
+      moduleConfigs[key] = { engine: e.target.value };
+      currentEngine = e.target.value;
+      localStorage.setItem('searchEngine', e.target.value);
+      saveModuleConfigs();
+      updateAllEngineDropdowns();
+      document.getElementById('module-config-panel').style.display = 'none';
     });
   }
 
@@ -249,10 +267,11 @@ function renderModuleList(containerId, modules, side) {
   modules.forEach((module, index) => {
     const item = document.createElement('div');
     item.className = 'module-item';
+    const showConfigBtn = (module === 'quick-access' || module === 'web-search');
     item.innerHTML = `
       <span>${moduleNames[module]}</span>
       <div class="module-actions">
-        ${module === 'quick-access' ? `<button class="module-config" data-side="${side}" data-index="${index}" data-module="${module}" title="配置">⚙</button>` : ''}
+        ${showConfigBtn ? `<button class="module-config" data-side="${side}" data-index="${index}" data-module="${module}" title="配置">⚙</button>` : ''}
         <button class="module-remove" data-side="${side}" data-index="${index}">×</button>
       </div>
     `;
@@ -272,7 +291,8 @@ function renderModuleList(containerId, modules, side) {
 
   // Add remove listeners
   container.querySelectorAll('.module-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const side = btn.dataset.side;
       const index = parseInt(btn.dataset.index);
       if (side === 'left') {
@@ -500,8 +520,6 @@ function loadBookmarks() {
 }
 
 function renderBookmarksSeparate(directBookmarks, subfolders) {
-  subfoldersCache = subfolders;
-
   // Render quick access in all quick-access modules
   document.querySelectorAll('.quick-access-grid-container').forEach(container => {
     container.innerHTML = '';
@@ -604,37 +622,12 @@ function flattenBookmarks(nodes) {
   return result;
 }
 
-function renderBookmarks(bookmarkTreeNodes) {
-  const container = document.getElementById('bookmarks-list');
-  container.innerHTML = '';
-
-  if (!bookmarkTreeNodes || bookmarkTreeNodes.length === 0) {
-    container.innerHTML = '<div class="empty-state">暂无书签</div>';
-    return;
-  }
-
-  bookmarkTreeNodes.forEach(node => {
-    container.appendChild(createBookmarkNode(node));
-  });
-}
-
-function createBookmarkNode(node) {
-  if (node.url) {
-    return createBookmarkElement(node);
-  } else if (node.children && node.children.length > 0) {
-    return createFolderElement(node);
-  }
-  return document.createElement('div');
-}
-
 function createBookmarkElement(bookmark) {
   const link = document.createElement('a');
   link.className = 'bookmark-item';
   link.href = bookmark.url;
   link.target = '_blank';
-  link.dataset.id = bookmark.id;
 
-  // Get favicon from domain
   const domain = getDomain(bookmark.url);
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
@@ -642,7 +635,6 @@ function createBookmarkElement(bookmark) {
   icon.classList.add('bookmark-icon');
   icon.src = faviconUrl;
   icon.onerror = function() {
-    // Fallback to default icon if favicon fails
     this.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#666" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>');
   };
 
@@ -682,7 +674,11 @@ function createFolderElement(folder) {
   children.className = 'folder-children';
 
   folder.children.forEach(child => {
-    children.appendChild(createBookmarkNode(child));
+    if (child.url) {
+      children.appendChild(createBookmarkElement(child));
+    } else if (child.children && child.children.length > 0) {
+      children.appendChild(createFolderElement(child));
+    }
   });
 
   folderItem.appendChild(header);
