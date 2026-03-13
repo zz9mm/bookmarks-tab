@@ -9,7 +9,14 @@
 
     <!-- Settings Panel -->
     <div class="settings-panel" :class="{ show: showSettings }" @click.stop>
-      <div class="settings-title">布局设置</div>
+      <div class="settings-header">
+        <div class="settings-title">布局设置</div>
+        <div class="settings-actions">
+          <button class="settings-action-btn" @click="importLayout" title="导入布局">导入</button>
+          <button class="settings-action-btn" @click="exportLayout" title="导出布局">导出</button>
+        </div>
+        <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
+      </div>
       <div class="settings-section">
         <div class="settings-subtitle">可用模块</div>
         <div class="module-palette">
@@ -231,6 +238,7 @@ export default {
     const configIndex = ref(0)
     const configModuleType = ref('')
     const tempConfig = reactive({})
+    const fileInput = ref(null)
 
     const topModules = ref([])
     const leftModules = ref([])
@@ -257,6 +265,52 @@ export default {
     const closeSettings = () => {
       showSettings.value = false
       showConfigPanel.value = false
+    }
+
+    const exportLayout = () => {
+      // 深拷贝避免引用问题
+      const data = {
+        top: JSON.parse(JSON.stringify(topModules.value)),
+        left: JSON.parse(JSON.stringify(leftModules.value)),
+        right: JSON.parse(JSON.stringify(rightModules.value)),
+        moduleConfigs: JSON.parse(JSON.stringify(moduleConfigs))
+      }
+      const json = JSON.stringify(data, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'bookmarks-layout.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+
+    const importLayout = () => {
+      fileInput.value.click()
+    }
+
+    const handleFileImport = (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result)
+          if (data.top) topModules.value = data.top
+          if (data.left) leftModules.value = data.left
+          if (data.right) rightModules.value = data.right
+          if (data.moduleConfigs) {
+            Object.assign(moduleConfigs, data.moduleConfigs)
+            saveModuleConfigs()
+          }
+          saveLayoutSettings()
+        } catch (err) {
+          alert('导入失败：无效的 JSON 文件')
+        }
+      }
+      reader.readAsText(file)
+      event.target.value = ''
     }
 
     const getModuleName = (type) => moduleNames[type] || type
@@ -484,6 +538,7 @@ export default {
       configIndex,
       configModuleType,
       tempConfig,
+      fileInput,
       topModules,
       leftModules,
       rightModules,
@@ -494,6 +549,9 @@ export default {
       availableModules,
       toggleSettings,
       closeSettings,
+      exportLayout,
+      importLayout,
+      handleFileImport,
       getModuleName,
       hasConfig,
       getModuleCols,
