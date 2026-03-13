@@ -95,6 +95,54 @@
               <option value="google">Google</option>
             </select>
           </div>
+          <!-- Title Config -->
+          <template v-if="configModuleType === 'title'">
+            <div class="config-item">
+              <label>标题文字</label>
+              <input type="text" v-model="tempConfig.text" @input="saveConfig" placeholder="请输入标题文字">
+            </div>
+            <div class="config-item">
+              <label>文字大小</label>
+              <select v-model="tempConfig.fontSize" @change="saveConfig">
+                <option :value="16">16px</option>
+                <option :value="20">20px</option>
+                <option :value="24">24px</option>
+                <option :value="28">28px</option>
+                <option :value="32">32px</option>
+                <option :value="36">36px</option>
+                <option :value="40">40px</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label>对齐方式</label>
+              <select v-model="tempConfig.align" @change="saveConfig">
+                <option value="left">靠左</option>
+                <option value="center">居中</option>
+                <option value="right">靠右</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label>字体</label>
+              <select v-model="tempConfig.fontFamily" @change="saveConfig">
+                <option value="inherit">默认字体</option>
+                <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
+                <option value="SimSun, serif">宋体</option>
+                <option value="KaiTi, cursive">楷体</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Times New Roman, serif">Times New Roman</option>
+                <option value="Courier New, monospace">Courier New</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <label>首行缩进</label>
+              <select v-model="tempConfig.textIndent" @change="saveConfig">
+                <option :value="0">无</option>
+                <option :value="2">2字符</option>
+                <option :value="4">4字符</option>
+                <option :value="8">8字符</option>
+              </select>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -110,6 +158,7 @@
           <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
           <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('top', index)" @engineChange="updateEngine" />
           <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" />
+          <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('top', index)" />
         </template>
       </div>
 
@@ -121,6 +170,7 @@
             <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('left', index)" @engineChange="updateEngine" />
             <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" />
+            <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('left', index)" />
           </template>
         </div>
 
@@ -131,6 +181,7 @@
             <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('right', index)" @engineChange="updateEngine" />
             <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" />
+            <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('right', index)" />
           </template>
         </div>
       </div>
@@ -144,6 +195,7 @@ import BookmarkSearch from './components/BookmarkSearch.vue'
 import FolderTree from './components/FolderTree.vue'
 import WebSearch from './components/WebSearch.vue'
 import QuickAccess from './components/QuickAccess.vue'
+import Title from './components/Title.vue'
 
 export default {
   name: 'App',
@@ -151,7 +203,8 @@ export default {
     BookmarkSearch,
     FolderTree,
     WebSearch,
-    QuickAccess
+    QuickAccess,
+    Title
   },
   setup() {
     // Module definitions
@@ -159,14 +212,16 @@ export default {
       { type: 'bookmark-search', name: '书签搜索' },
       { type: 'folder', name: '收藏夹' },
       { type: 'web-search', name: '网页搜索' },
-      { type: 'quick-access', name: '快速访问' }
+      { type: 'quick-access', name: '快速访问' },
+      { type: 'title', name: '文本' }
     ]
 
     const moduleNames = {
       'bookmark-search': '书签搜索',
       'folder': '收藏夹',
       'web-search': '网页搜索',
-      'quick-access': '快速访问'
+      'quick-access': '快速访问',
+      'title': '文本'
     }
 
     // State
@@ -206,7 +261,7 @@ export default {
 
     const getModuleName = (type) => moduleNames[type] || type
 
-    const hasConfig = (type) => type === 'quick-access' || type === 'web-search'
+    const hasConfig = (type) => type === 'quick-access' || type === 'web-search' || type === 'title'
 
     const getModuleConfigKey = (side, index) => `${side}-${index}`
 
@@ -217,6 +272,8 @@ export default {
           moduleConfigs[key] = { cols: 4 }
         } else if (type === 'web-search') {
           moduleConfigs[key] = { engine: 'bing' }
+        } else if (type === 'title') {
+          moduleConfigs[key] = { text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 }
         }
       }
       return moduleConfigs[key] || {}
@@ -230,6 +287,17 @@ export default {
     const getModuleEngine = (side, index) => {
       const config = getModuleConfig(side, index, 'web-search')
       return config.engine || 'bing'
+    }
+
+    const getModuleTitleConfig = (side, index) => {
+      const config = getModuleConfig(side, index, 'title')
+      return {
+        text: config.text || '文本',
+        fontSize: config.fontSize || 24,
+        align: config.align || 'center',
+        fontFamily: config.fontFamily || 'inherit',
+        textIndent: config.textIndent || 0
+      }
     }
 
     const addModule = (type, side) => {
@@ -290,7 +358,6 @@ export default {
       }
 
       saveModuleConfigs()
-      showConfigPanel.value = false
     }
 
     const resetLayout = () => {
@@ -431,6 +498,7 @@ export default {
       hasConfig,
       getModuleCols,
       getModuleEngine,
+      getModuleTitleConfig,
       addModule,
       removeModule,
       moveModule,
