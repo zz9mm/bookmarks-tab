@@ -20,10 +20,6 @@
             <div class="model-stats">
               <div class="stat-item">
                 <span class="stat-label">剩余次数:</span>
-                <span class="stat-value">{{ model.current_interval_total_count - model.current_interval_usage_count }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">已用/总数:</span>
                 <span class="stat-value">{{ model.current_interval_usage_count }} / {{ model.current_interval_total_count }}</span>
               </div>
               <div class="stat-progress">
