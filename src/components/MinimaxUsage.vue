@@ -29,15 +29,11 @@
                 <span class="progress-percent">{{ Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) }}%</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">周期开始:</span>
-                <span class="stat-value">{{ formatTime(model.start_time) }}</span>
+                <span class="stat-label">周期:</span>
+                <span class="stat-value">{{ formatTimeRange(model.start_time, model.end_time) }}</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">周期结束:</span>
-                <span class="stat-value">{{ formatTime(model.end_time) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">剩余重置时间:</span>
+                <span class="stat-label">剩余重置:</span>
                 <span class="stat-value">{{ formatRemainsTime(model.remains_time) }}</span>
               </div>
             </div>
@@ -149,6 +145,11 @@ const formatTime = (timestamp) => {
   const hours = String(date.getUTCHours()).padStart(2, '0')
   const minutes = String(date.getUTCMinutes()).padStart(2, '0')
   return `${hours}:${minutes}(UTC+8)`
+}
+
+const formatTimeRange = (start, end) => {
+  if (!start || !end) return '-'
+  return `${formatTime(start)}-${formatTime(end).replace('(UTC+8)', '')}`
 }
 
 const formatRemainsTime = (seconds) => {
