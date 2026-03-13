@@ -28,6 +28,18 @@
                 </div>
                 <span class="progress-percent">{{ Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) }}%</span>
               </div>
+              <div class="stat-item">
+                <span class="stat-label">周期开始:</span>
+                <span class="stat-value">{{ formatTime(model.start_time) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">周期结束:</span>
+                <span class="stat-value">{{ formatTime(model.end_time) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">剩余重置时间:</span>
+                <span class="stat-value">{{ formatRemainsTime(model.remains_time) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -129,6 +141,26 @@ const fetchUsage = async () => {
 const formatNumber = (num) => {
   if (num === undefined || num === null) return '-'
   return new Intl.NumberFormat('zh-CN').format(num)
+}
+
+const formatTime = (timestamp) => {
+  if (!timestamp) return '-'
+  return new Date(timestamp).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const formatRemainsTime = (seconds) => {
+  if (!seconds) return '-'
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  if (hours > 0) {
+    return `${hours}小时${minutes}分钟`
+  }
+  return `${minutes}分钟`
 }
 
 defineExpose({ fetchUsage })
