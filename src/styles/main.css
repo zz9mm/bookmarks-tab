@@ -124,7 +124,7 @@ body {
   border: 1px solid #e9ecef;
   border-radius: 6px;
   font-size: 13px;
-  cursor: grab;
+  cursor: default;
   transition: all 0.15s ease;
 }
 
@@ -142,9 +142,10 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
-  font-size: 14px;
-  color: #666;
+  padding: 6px 12px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
   border-radius: 4px;
   transition: all 0.15s ease;
 }
@@ -177,34 +178,46 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  color: #999;
-  font-size: 14px;
-  padding: 0 4px;
+  color: #000;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
 .module-list .module-item .module-remove:hover {
-  color: #f00;
-}
-
-.module-list .module-item .module-move {
   background: #e9ecef;
-  border: none;
-  cursor: pointer;
-  color: #495057;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  line-height: 1;
-  font-weight: bold;
-}
-
-.module-list .module-item .module-move:hover:not(:disabled) {
-  background: #dee2e6;
   color: #000;
 }
 
+.module-list .module-item .module-remove:active {
+  background: #dee2e6;
+}
+
+.module-list .module-item .module-move {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #000;
+  font-size: 18px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  line-height: 1;
+  font-weight: bold;
+  transition: all 0.15s ease;
+}
+
+.module-list .module-item .module-move:hover:not(:disabled) {
+  background: #e9ecef;
+  color: #000;
+}
+
+.module-list .module-item .module-move:active:not(:disabled) {
+  background: #dee2e6;
+}
+
 .module-list .module-item .module-move:disabled {
-  background: #f8f9fa;
+  background: transparent;
   color: #ced4da;
   cursor: not-allowed;
 }
@@ -219,28 +232,33 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  color: #999;
-  font-size: 14px;
-  padding: 2px 6px;
-  border-radius: 3px;
+  color: #000;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
 .module-config:hover {
   background: #e9ecef;
-  color: #555;
+  color: #000;
+}
+
+.module-config:active {
+  background: #dee2e6;
 }
 
 .reset-layout-btn {
   width: calc(100% - 40px);
-  padding: 12px 20px;
+  padding: 14px 20px;
   margin: 16px 20px 20px;
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #666;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
   transition: all 0.15s ease;
 }
 
