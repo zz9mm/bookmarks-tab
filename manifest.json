@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "书签快速访问",
   "version": "1.0",
-  "description": "在新标签页显示书签快速访问界面",
+  "description": "Edge 扩展，在新标签页显示书签快速访问界面",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
