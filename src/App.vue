@@ -150,6 +150,11 @@
               </select>
             </div>
           </template>
+          <!-- Minimax Usage Config -->
+          <div v-if="configModuleType === 'minimax-usage'" class="config-item">
+            <label>API Key</label>
+            <input type="password" v-model="tempConfig.apiKey" @input="saveConfig" placeholder="输入 Minimax API Key">
+          </div>
         </div>
       </div>
 
@@ -166,6 +171,7 @@
           <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('top', index)" @engineChange="updateEngine" />
           <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" />
           <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('top', index)" />
+          <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('top', index)" />
         </template>
       </div>
 
@@ -178,6 +184,7 @@
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('left', index)" @engineChange="updateEngine" />
             <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('left', index)" />
+            <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('left', index)" />
           </template>
         </div>
 
@@ -189,6 +196,7 @@
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('right', index)" @engineChange="updateEngine" />
             <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('right', index)" />
+            <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('right', index)" />
           </template>
         </div>
       </div>
@@ -203,6 +211,7 @@ import FolderTree from './components/FolderTree.vue'
 import WebSearch from './components/WebSearch.vue'
 import QuickAccess from './components/QuickAccess.vue'
 import Title from './components/Title.vue'
+import MinimaxUsage from './components/MinimaxUsage.vue'
 
 export default {
   name: 'App',
@@ -211,7 +220,8 @@ export default {
     FolderTree,
     WebSearch,
     QuickAccess,
-    Title
+    Title,
+    MinimaxUsage
   },
   setup() {
     // Module definitions
@@ -220,7 +230,8 @@ export default {
       { type: 'folder', name: '收藏夹' },
       { type: 'web-search', name: '网页搜索' },
       { type: 'quick-access', name: '快速访问' },
-      { type: 'title', name: '文本' }
+      { type: 'title', name: '文本' },
+      { type: 'minimax-usage', name: 'Minimax 用量' }
     ]
 
     const moduleNames = {
@@ -228,7 +239,8 @@ export default {
       'folder': '收藏夹',
       'web-search': '网页搜索',
       'quick-access': '快速访问',
-      'title': '文本'
+      'title': '文本',
+      'minimax-usage': 'Minimax 用量'
     }
 
     // State
@@ -315,7 +327,7 @@ export default {
 
     const getModuleName = (type) => moduleNames[type] || type
 
-    const hasConfig = (type) => type === 'quick-access' || type === 'web-search' || type === 'title'
+    const hasConfig = (type) => type === 'quick-access' || type === 'web-search' || type === 'title' || type === 'minimax-usage'
 
     const getModuleConfigKey = (side, index) => `${side}-${index}`
 
@@ -328,6 +340,8 @@ export default {
           moduleConfigs[key] = { engine: 'bing' }
         } else if (type === 'title') {
           moduleConfigs[key] = { text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 }
+        } else if (type === 'minimax-usage') {
+          moduleConfigs[key] = { apiKey: '' }
         }
       }
       return moduleConfigs[key] || {}
@@ -351,6 +365,13 @@ export default {
         align: config.align || 'center',
         fontFamily: config.fontFamily || 'inherit',
         textIndent: config.textIndent || 0
+      }
+    }
+
+    const getModuleMinimaxConfig = (side, index) => {
+      const config = getModuleConfig(side, index, 'minimax-usage')
+      return {
+        apiKey: config.apiKey || ''
       }
     }
 
@@ -557,6 +578,7 @@ export default {
       getModuleCols,
       getModuleEngine,
       getModuleTitleConfig,
+      getModuleMinimaxConfig,
       addModule,
       removeModule,
       moveModule,
