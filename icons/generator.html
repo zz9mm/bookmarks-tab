@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Icon Generator</title>
+</head>
+<body>
+  <h1>Click the buttons below to generate icons</h1>
+  <button onclick="generateIcon(16)">Generate 16x16</button>
+  <button onclick="generateIcon(32)">Generate 32x32</button>
+  <button onclick="generateIcon(48)">Generate 48x48</button>
+  <button onclick="generateIcon(128)">Generate 128x128</button>
+  <canvas id="canvas" style="display:none"></canvas>
+  <script>
+    function generateIcon(size) {
+      const canvas = document.getElementById('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = '#0078d4';
+      ctx.fillRect(0, 0, size, size);
+
+      // Bookmark icon
+      ctx.fillStyle = '#ffffff';
+      const padding = size * 0.15;
+      const iconWidth = size - padding * 2;
+
+      // Draw simple bookmark shape
+      ctx.beginPath();
+      ctx.moveTo(padding + iconWidth * 0.5, padding);
+      ctx.lineTo(padding + iconWidth * 0.5, padding);
+      ctx.lineTo(padding + iconWidth, padding + iconWidth * 0.3);
+      ctx.lineTo(padding + iconWidth * 0.75, padding + iconWidth * 0.3);
+      ctx.lineTo(padding + iconWidth * 0.75, padding + iconWidth);
+      ctx.lineTo(padding + iconWidth * 0.25, padding + iconWidth);
+      ctx.lineTo(padding + iconWidth * 0.25, padding + iconWidth * 0.3);
+      ctx.lineTo(padding, padding + iconWidth * 0.3);
+      ctx.closePath();
+      ctx.fill();
+
+      const dataUrl = canvas.toDataURL('image/png');
+      console.log(`Icon ${size}x${size}:`);
+      console.log(dataUrl);
+      console.log(`Save this as icon${size}.png`);
+    }
+  </script>
+</body>
+</html>
