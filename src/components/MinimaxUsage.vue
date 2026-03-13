@@ -250,10 +250,14 @@ defineExpose({ fetchUsage })
 }
 
 .stat-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
 }
 
 .progress-bar {
+  flex: 1;
   height: 4px;
   background: #e5e7eb;
   border-radius: 2px;
@@ -270,7 +274,7 @@ defineExpose({ fetchUsage })
 .progress-percent {
   font-size: 12px;
   color: #666;
-  margin-top: 4px;
+  min-width: 40px;
   text-align: right;
 }
 
