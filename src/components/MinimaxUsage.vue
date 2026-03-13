@@ -29,11 +29,7 @@
                 <span class="progress-percent">{{ Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) }}%</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">周期:</span>
                 <span class="stat-value">{{ formatTimeRange(model.start_time, model.end_time) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">剩余重置:</span>
                 <span class="stat-value">{{ formatRemainsTime(model.remains_time) }}</span>
               </div>
             </div>
@@ -157,9 +153,9 @@ const formatRemainsTime = (seconds) => {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   if (hours > 0) {
-    return `${hours}小时${minutes}分钟`
+    return `${hours}小时后重置`
   }
-  return `${minutes}分钟`
+  return `${minutes}分钟后重置`
 }
 
 defineExpose({ fetchUsage })
