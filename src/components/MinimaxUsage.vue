@@ -23,7 +23,9 @@
                 <span class="stat-value">{{ model.current_interval_total_count - model.current_interval_usage_count }} / {{ model.current_interval_total_count }}</span>
               </div>
               <div class="stat-progress">
-                <div class="progress-bar" :style="{ width: ((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) + '%' }"></div>
+                <div class="progress-bar">
+                  <div class="progress-bar-inner" :style="{ width: ((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) + '%' }"></div>
+                </div>
                 <span class="progress-percent">{{ Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) }}%</span>
               </div>
             </div>
@@ -248,15 +250,17 @@ defineExpose({ fetchUsage })
 }
 
 .stat-progress {
+  margin-top: 4px;
+}
+
+.progress-bar {
   height: 4px;
   background: #e5e7eb;
   border-radius: 2px;
   overflow: hidden;
-  margin-top: 4px;
-  position: relative;
 }
 
-.progress-bar {
+.progress-bar-inner {
   height: 100%;
   background: #4f46e5;
   border-radius: 2px;
@@ -264,11 +268,10 @@ defineExpose({ fetchUsage })
 }
 
 .progress-percent {
-  position: absolute;
-  right: 0;
-  top: 8px;
   font-size: 12px;
   color: #666;
+  margin-top: 4px;
+  text-align: right;
 }
 
 .minimax-empty {
