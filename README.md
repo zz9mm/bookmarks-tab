@@ -8,46 +8,73 @@ Edge 浏览器扩展，在新标签页显示书签快速访问界面。
 - **收藏夹**：树形结构展示所有书签文件夹，支持展开/折叠和筛选
 - **书签搜索**：快速搜索书签
 - **网页搜索**：支持 Bing、百度、Google 三大搜索引擎
-- **自定义布局**：可配置左右两侧显示的模块
+- **自定义布局**：可配置顶部、左侧、右侧区域的模块
 - **响应式配置**：可调整快速访问图标的每行显示数量
 
 ## 安装方法
 
-1. 打开 Edge 浏览器，访问 `edge://extensions/`
-2. 开启右上角的「开发者模式」
-3. 点击「加载已解压的扩展程序」
-4. 选择本项目的文件夹
-5. 安装完成后，新标签页将显示书签快速访问界面
+1. 克隆本项目
+2. 安装依赖：`npm install`
+3. 构建项目：`npm run build`
+4. 打开 Edge 浏览器，访问 `edge://extensions/`
+5. 开启右上角的「开发者模式」
+6. 点击「加载已解压的扩展程序」
+7. 选择本项目的 `dist` 文件夹
+8. 安装完成后，新标签页将显示书签快速访问界面
 
-## 使用说明
+## 开发命令
 
-### 布局配置
+```bash
+# 安装依赖
+npm install
 
-点击右上角设置按钮，可以：
-- 添加或移除左右两侧的模块
-- 调整快速访问图标的列数
-- 重置为默认布局
+# 开发模式
+npm run dev
 
-### 搜索引擎
+# 构建项目
+npm run build
 
-在网页搜索框中输入关键词，按 Enter 键进行搜索。点击搜索引擎名称可切换不同的搜索引擎。
+# 预览构建结果
+npm run preview
+```
+
+## 重新加载扩展
+
+修改代码后：
+1. 运行 `npm run build` 重新构建
+2. 打开 `edge://extensions/`
+3. 点击扩展的刷新按钮
 
 ## 项目结构
 
 ```
 bookmarks-tab/
-├── manifest.json      # 扩展配置文件
-├── newtab.html        # 新标签页 HTML
-├── newtab.css         # 样式文件
-├── newtab.js          # 逻辑脚本
-└── icons/             # 扩展图标
+├── src/
+│   ├── main.js              # Vue 应用入口
+│   ├── App.vue              # 根组件
+│   ├── components/          # Vue 组件
+│   │   ├── BookmarkSearch.vue
+│   │   ├── FolderTree.vue
+│   │   ├── FolderItem.vue
+│   │   ├── WebSearch.vue
+│   │   └── QuickAccess.vue
+│   ├── composables/         # 可组合函数
+│   │   └── useFavicon.js
+│   └── styles/
+│       └── main.css         # 样式文件
+├── dist/                    # 构建产物
+├── manifest.json            # 扩展配置
+├── vite.config.js           # Vite 配置
+├── tailwind.config.js      # Tailwind 配置
+└── package.json
 ```
 
 ## 技术栈
 
-- HTML5
-- CSS3
-- JavaScript (Chrome Extensions API)
+- Vue 3 (Composition API + Script Setup)
+- Vite
+- TailwindCSS
+- Chrome Extensions API (Manifest V3)
 
 ## 许可证
 
