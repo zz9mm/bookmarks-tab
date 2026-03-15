@@ -8,158 +8,25 @@
     </button>
 
     <!-- Settings Panel -->
-    <div class="settings-panel" :class="{ show: showSettings }" @click.stop>
-      <div class="settings-header">
-        <div class="settings-title">布局设置</div>
-        <div class="settings-actions">
-          <button class="settings-action-btn" @click="importLayout" title="导入布局">导入</button>
-          <button class="settings-action-btn" @click="exportLayout" title="导出布局">导出</button>
-        </div>
-        <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
-      </div>
-      <div class="settings-section">
-        <div class="settings-subtitle">可用模块</div>
-        <div class="module-palette">
-          <div v-for="module in availableModules" :key="module.type" class="module-item">
-            <span>{{ module.name }}</span>
-            <div>
-              <button class="module-add-btn" @click="addModule(module.type, 'top')" title="添加到顶部">↑</button>
-              <button class="module-add-btn" @click="addModule(module.type, 'left')" title="添加到左侧">←</button>
-              <button class="module-add-btn" @click="addModule(module.type, 'right')" title="添加到右侧">→</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-subtitle">左侧模块</div>
-        <div class="module-list">
-          <div v-for="(module, index) in leftModules" :key="'left-' + index" class="module-item">
-            <span>{{ getModuleName(module) }}</span>
-            <div class="module-actions">
-              <button class="module-move" @click="moveModule('left', index, -1)" :disabled="index === 0" title="上移">↑</button>
-              <button class="module-move" @click="moveModule('left', index, 1)" :disabled="index === leftModules.length - 1" title="下移">↓</button>
-              <button v-if="hasConfig(module)" class="module-config" @click="openConfig('left', index, module)" title="配置">⚙</button>
-              <button class="module-remove" @click="removeModule('left', index)">×</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-subtitle">右侧模块</div>
-        <div class="module-list">
-          <div v-for="(module, index) in rightModules" :key="'right-' + index" class="module-item">
-            <span>{{ getModuleName(module) }}</span>
-            <div class="module-actions">
-              <button class="module-move" @click="moveModule('right', index, -1)" :disabled="index === 0" title="上移">↑</button>
-              <button class="module-move" @click="moveModule('right', index, 1)" :disabled="index === rightModules.length - 1" title="下移">↓</button>
-              <button v-if="hasConfig(module)" class="module-config" @click="openConfig('right', index, module)" title="配置">⚙</button>
-              <button class="module-remove" @click="removeModule('right', index)">×</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-subtitle">顶部模块（全宽）</div>
-        <div class="module-list">
-          <div v-for="(module, index) in topModules" :key="'top-' + index" class="module-item">
-            <span>{{ getModuleName(module) }}</span>
-            <div class="module-actions">
-              <button class="module-move" @click="moveModule('top', index, -1)" :disabled="index === 0" title="上移">↑</button>
-              <button class="module-move" @click="moveModule('top', index, 1)" :disabled="index === topModules.length - 1" title="下移">↓</button>
-              <button v-if="hasConfig(module)" class="module-config" @click="openConfig('top', index, module)" title="配置">⚙</button>
-              <button class="module-remove" @click="removeModule('top', index)">×</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Module Config Panel -->
-      <div v-if="showConfigPanel" class="module-config-panel" @click.stop>
-        <div class="config-header">
-          <span class="config-title">模块设置</span>
-          <button class="config-close" @click="closeConfig">&times;</button>
-        </div>
-        <div class="config-content">
-          <!-- Quick Access Config -->
-          <div v-if="configModuleType === 'quick-access'" class="config-item">
-            <label>每行显示图标数量</label>
-            <select v-model="tempConfig.cols" @change="saveConfig">
-              <option :value="3">3 个</option>
-              <option :value="4">4 个</option>
-              <option :value="5">5 个</option>
-              <option :value="6">6 个</option>
-              <option :value="8">8 个</option>
-              <option :value="10">10 个</option>
-            </select>
-          </div>
-          <!-- Web Search Config -->
-          <div v-if="configModuleType === 'web-search'" class="config-item">
-            <label>默认搜索引擎</label>
-            <select v-model="tempConfig.engine" @change="saveConfig">
-              <option value="bing">Bing</option>
-              <option value="baidu">百度</option>
-              <option value="google">Google</option>
-            </select>
-          </div>
-          <!-- Title Config -->
-          <template v-if="configModuleType === 'title'">
-            <div class="config-item">
-              <label>标题文字</label>
-              <input type="text" v-model="tempConfig.text" @input="saveConfig" placeholder="请输入标题文字">
-            </div>
-            <div class="config-item">
-              <label>文字大小</label>
-              <select v-model="tempConfig.fontSize" @change="saveConfig">
-                <option :value="16">16px</option>
-                <option :value="20">20px</option>
-                <option :value="24">24px</option>
-                <option :value="28">28px</option>
-                <option :value="32">32px</option>
-                <option :value="36">36px</option>
-                <option :value="40">40px</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label>对齐方式</label>
-              <select v-model="tempConfig.align" @change="saveConfig">
-                <option value="left">靠左</option>
-                <option value="center">居中</option>
-                <option value="right">靠右</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label>字体</label>
-              <select v-model="tempConfig.fontFamily" @change="saveConfig">
-                <option value="inherit">默认字体</option>
-                <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
-                <option value="SimSun, serif">宋体</option>
-                <option value="KaiTi, cursive">楷体</option>
-                <option value="Arial, sans-serif">Arial</option>
-                <option value="Times New Roman, serif">Times New Roman</option>
-                <option value="Courier New, monospace">Courier New</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label>首行缩进</label>
-              <select v-model="tempConfig.textIndent" @change="saveConfig">
-                <option :value="0">无</option>
-                <option :value="2">2字符</option>
-                <option :value="4">4字符</option>
-                <option :value="8">8字符</option>
-              </select>
-            </div>
-          </template>
-          <!-- Minimax Usage Config -->
-          <div v-if="configModuleType === 'minimax-usage'" class="config-item">
-            <label>API Key</label>
-            <input type="password" v-model="tempConfig.apiKey" @input="saveConfig" placeholder="输入 Minimax API Key">
-          </div>
-        </div>
-      </div>
-
-      <button class="reset-layout-btn" @click="resetLayout">重置布局</button>
-    </div>
+    <SettingsPanel
+      :show="showSettings"
+      :show-config-panel="showConfigPanel"
+      :config-module-type="configModuleType"
+      :temp-config="tempConfig"
+      :top-modules="topModules"
+      :left-modules="leftModules"
+      :right-modules="rightModules"
+      @import="importLayout"
+      @export="exportLayout"
+      @file-import="handleFileImport"
+      @add-module="addModule"
+      @remove-module="removeModule"
+      @move-module="moveModule"
+      @open-config="openConfig"
+      @close-config="closeConfig"
+      @update-config="updateConfig"
+      @reset-layout="resetLayout"
+    />
 
     <!-- Main Layout -->
     <div class="main-layout" @click="closeSettings">
@@ -212,6 +79,7 @@ import WebSearch from './components/WebSearch.vue'
 import QuickAccess from './components/QuickAccess.vue'
 import Title from './components/Title.vue'
 import MinimaxUsage from './components/MinimaxUsage.vue'
+import SettingsPanel from './components/SettingsPanel.vue'
 
 export default {
   name: 'App',
@@ -221,7 +89,8 @@ export default {
     WebSearch,
     QuickAccess,
     Title,
-    MinimaxUsage
+    MinimaxUsage,
+    SettingsPanel
   },
   setup() {
     // Module definitions
@@ -423,13 +292,15 @@ export default {
       showConfigPanel.value = false
     }
 
-    const saveConfig = () => {
-      const key = getModuleConfigKey(configSide.value, configIndex.value)
-      moduleConfigs[key] = { ...tempConfig }
+    const updateConfig = (key, value) => {
+      tempConfig[key] = value
 
-      if (configModuleType.value === 'web-search') {
-        currentEngine.value = tempConfig.engine
-        localStorage.setItem('searchEngine', tempConfig.engine)
+      const configKey = getModuleConfigKey(configSide.value, configIndex.value)
+      moduleConfigs[configKey] = { ...tempConfig }
+
+      if (configModuleType.value === 'web-search' && key === 'engine') {
+        currentEngine.value = value
+        localStorage.setItem('searchEngine', value)
       }
 
       saveModuleConfigs()
@@ -584,7 +455,7 @@ export default {
       moveModule,
       openConfig,
       closeConfig,
-      saveConfig,
+      updateConfig,
       resetLayout,
       updateEngine
     }
