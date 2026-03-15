@@ -111,6 +111,13 @@ watch(() => props.apiKey, (newKey) => {
   }
 })
 
+// 监听配置变化，当显示设置改变时自动刷新数据
+watch(() => [props.showAllModels, props.defaultModel], () => {
+  if (props.apiKey && !modelRemains.value.length) {
+    fetchUsage()
+  }
+})
+
 const fetchUsage = async () => {
   if (!props.apiKey) return
 
