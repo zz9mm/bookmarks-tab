@@ -37,6 +37,7 @@ interface MinimaxConfig {
   apiKey?: string
   defaultModel?: string
   showAllModels?: boolean
+  availableModels?: string[]
 }
 
 const props = defineProps<{
@@ -47,12 +48,19 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: MinimaxConfig): void
 }>()
 
-const availableModels = ref<string[]>([])
+const availableModels = ref<string[]>(props.modelValue?.availableModels || [])
 const querying = ref(false)
 
 // 当 API Key 变化时清空模型列表
 watch(() => props.modelValue?.apiKey, () => {
   availableModels.value = []
+})
+
+// 监听配置中模型列表的变化（从 localStorage 恢复时）
+watch(() => props.modelValue?.availableModels, (newModels) => {
+  if (newModels && newModels.length > 0) {
+    availableModels.value = newModels
+  }
 })
 
 const queryModels = async () => {
@@ -75,13 +83,18 @@ const queryModels = async () => {
     }
 
     const data = await response.json() as { model_remains?: { model_name: string }[], code?: number, data?: { model_name: string }, message?: string }
+    let models: string[] = []
     if (data.model_remains && Array.isArray(data.model_remains)) {
-      availableModels.value = data.model_remains.map(m => m.model_name)
+      models = data.model_remains.map(m => m.model_name)
     } else if (data.code === 0 && data.data) {
-      availableModels.value = [data.data.model_name]
+      models = [data.data.model_name]
     } else {
       throw new Error(data.message || '获取模型列表失败')
     }
+
+    availableModels.value = models
+    // 保存模型列表到配置
+    updateConfig('availableModels', models)
   } catch (err: unknown) {
     console.error('查询模型失败:', err)
     alert(err instanceof Error ? err.message : '查询模型失败')
