@@ -10,6 +10,13 @@
       </div>
     </div>
 
+    <div class="config-item checkbox-item">
+      <label>
+        <input type="checkbox" :checked="modelValue?.showAllModels" @change="updateConfig('showAllModels', ($event.target as HTMLInputElement).checked)">
+        显示所有模型
+      </label>
+    </div>
+
     <div class="config-item" v-if="!modelValue?.showAllModels">
       <label>默认显示模型</label>
       <select :value="modelValue?.defaultModel || ''" @change="updateConfig('defaultModel', ($event.target as HTMLSelectElement).value)">
@@ -19,13 +26,6 @@
       <div v-if="availableModels.length > 0" class="model-list-hint">
         共 {{ availableModels.length }} 个可用模型
       </div>
-    </div>
-
-    <div class="config-item checkbox-item">
-      <label>
-        <input type="checkbox" :checked="modelValue?.showAllModels" @change="updateConfig('showAllModels', ($event.target as HTMLInputElement).checked)">
-        显示所有模型
-      </label>
     </div>
   </div>
 </template>
