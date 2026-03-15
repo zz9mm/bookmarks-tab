@@ -28,9 +28,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { searchEngines, getEngineIcon } from '../composables/useFavicon'
+
+type EngineKey = 'bing' | 'baidu' | 'google'
 
 const props = defineProps({
   defaultEngine: {
@@ -42,17 +44,17 @@ const props = defineProps({
 const emit = defineEmits(['engineChange'])
 
 const searchQuery = ref('')
-const currentEngine = ref(props.defaultEngine)
+const currentEngine = ref<EngineKey>(props.defaultEngine as EngineKey)
 const showEngineMenu = ref(false)
-const dropdownRef = ref(null)
+const dropdownRef = ref<HTMLElement | null>(null)
 
-const getEngineName = (engine) => searchEngines[engine]?.name || 'Bing'
+const getEngineName = (engine: EngineKey) => searchEngines[engine]?.name || 'Bing'
 
 const toggleEngineMenu = () => {
   showEngineMenu.value = !showEngineMenu.value
 }
 
-const selectEngine = (engine) => {
+const selectEngine = (engine: EngineKey) => {
   currentEngine.value = engine
   showEngineMenu.value = false
   emit('engineChange', engine)
@@ -66,8 +68,8 @@ const performSearch = () => {
   }
 }
 
-const handleClickOutside = (e) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
+const handleClickOutside = (e: MouseEvent) => {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
     showEngineMenu.value = false
   }
 }

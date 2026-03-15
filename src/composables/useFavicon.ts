@@ -1,5 +1,5 @@
 // Shared utilities for favicon handling
-export const getDomain = (url) => {
+export const getDomain = (url: string): string => {
   try {
     return new URL(url).hostname
   } catch {
@@ -7,12 +7,12 @@ export const getDomain = (url) => {
   }
 }
 
-export const getFavicon = (url, size = 32) => {
+export const getFavicon = (url: string, size = 32): string => {
   const domain = getDomain(url)
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`
 }
 
-export const getEngineIcon = (engine) => {
+export const getEngineIcon = (engine: string): string => {
   const domain = engine === 'baidu' ? 'baidu.com' : `${engine}.com`
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
 }

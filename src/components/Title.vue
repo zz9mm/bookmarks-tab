@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { computed } from 'vue'
 
 export default {
@@ -34,7 +34,7 @@ export default {
   setup(props) {
     const titleStyle = computed(() => ({
       fontSize: props.fontSize + 'px',
-      textAlign: props.align,
+      textAlign: props.align as 'left' | 'center' | 'right',
       fontFamily: props.fontFamily,
       textIndent: props.textIndent + 'em'
     }))
