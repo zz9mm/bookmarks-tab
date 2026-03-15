@@ -8,8 +8,11 @@ Edge 浏览器扩展，在新标签页显示书签快速访问界面。
 - **收藏夹**：树形结构展示所有书签文件夹，支持展开/折叠和筛选
 - **书签搜索**：快速搜索书签
 - **网页搜索**：支持 Bing、百度、Google 三大搜索引擎
+- **自定义文本**：可添加自定义标题文本
+- **Minimax 用量**：显示 Minimax API 使用量
 - **自定义布局**：可配置顶部、左侧、右侧区域的模块
 - **响应式配置**：可调整快速访问图标的每行显示数量
+- **布局导入/导出**：支持布局配置的备份和恢复
 
 ## 安装方法
 
@@ -50,29 +53,42 @@ npm run preview
 ```
 bookmarks-tab/
 ├── src/
-│   ├── main.js              # Vue 应用入口
-│   ├── App.vue              # 根组件
-│   ├── components/          # Vue 组件
-│   │   ├── BookmarkSearch.vue
-│   │   ├── FolderTree.vue
-│   │   ├── FolderItem.vue
-│   │   ├── WebSearch.vue
-│   │   └── QuickAccess.vue
-│   ├── composables/         # 可组合函数
-│   │   └── useFavicon.js
+│   ├── main.js                 # Vue 应用入口
+│   ├── App.vue                 # 根组件
+│   ├── components/             # 公共组件
+│   │   └── SettingsPanel.vue   # 设置面板
+│   ├── modules/                # 功能模块
+│   │   ├── types.ts            # 模块类型定义
+│   │   ├── bookmark-search/    # 书签搜索
+│   │   ├── folder/             # 收藏夹
+│   │   ├── web-search/         # 网页搜索
+│   │   ├── quick-access/       # 快速访问
+│   │   ├── title/              # 自定义文本
+│   │   └── minimax-usage/      # Minimax 用量
 │   └── styles/
-│       └── main.css         # 样式文件
-├── dist/                    # 构建产物
-├── manifest.json            # 扩展配置
-├── vite.config.js           # Vite 配置
-├── tailwind.config.js      # Tailwind 配置
+│       └── main.css             # 样式文件
+├── dist/                        # 构建产物
+├── manifest.json                # 扩展配置
+├── vite.config.js               # Vite 配置
 └── package.json
 ```
+
+## 模块说明
+
+| 模块 | 说明 |
+|------|------|
+| 书签搜索 | 快速搜索书签 |
+| 收藏夹 | 树形结构展示所有书签文件夹 |
+| 网页搜索 | 支持 Bing、百度、Google 搜索 |
+| 快速访问 | 以图标网格展示书签 |
+| 文本 | 自定义标题文本 |
+| Minimax 用量 | 显示 Minimax API 使用量 |
 
 ## 技术栈
 
 - Vue 3 (Composition API + Script Setup)
 - Vite
+- Ant Design Vue
 - TailwindCSS
 - Chrome Extensions API (Manifest V3)
 

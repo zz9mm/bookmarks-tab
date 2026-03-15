@@ -151,10 +151,11 @@ const formatTimeRange = (start: number, end: number) => {
 
 const formatRemainsTime = (seconds: number) => {
   if (!seconds) return '-'
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
+  const ms = Math.floor(seconds / 1000) // 转换为秒
+  const hours = Math.floor(ms / 3600)
+  const minutes = Math.floor((ms % 3600) / 60)
   if (hours > 0) {
-    return `${hours}小时后重置`
+    return `${hours}小时${minutes}分钟后重置`
   }
   return `${minutes}分钟后重置`
 }
