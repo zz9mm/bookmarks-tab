@@ -41,8 +41,17 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+
+interface ModelRemain {
+  model_name: string
+  current_interval_total_count: number
+  current_interval_usage_count: number
+  start_time: number
+  end_time: number
+  remains_time: number
+}
 
 const props = defineProps({
   apiKey: {
@@ -53,9 +62,9 @@ const props = defineProps({
 
 const loading = ref(false)
 const error = ref('')
-const modelRemains = ref([])
+const modelRemains = ref<ModelRemain[]>([])
 
-let timer = null
+let timer: ReturnType<typeof setInterval> | null = null
 
 const startPolling = () => {
   if (timer) clearInterval(timer)
@@ -63,7 +72,7 @@ const startPolling = () => {
     if (props.apiKey) {
       fetchUsage()
     }
-  }, 60000) // 1分钟
+  }, 60000)
 }
 
 const stopPolling = () => {
@@ -110,11 +119,11 @@ const fetchUsage = async () => {
     })
 
     if (!response.ok) {
-      const errData = await response.json().catch(() => ({}))
+      const errData = await response.json().catch(() => ({})) as { message?: string }
       throw new Error(errData.message || `请求失败: ${response.status}`)
     }
 
-    const data = await response.json()
+    const data = await response.json() as { model_remains?: ModelRemain[], code?: number, data?: ModelRemain, message?: string }
     if (data.model_remains) {
       modelRemains.value = data.model_remains
     } else if (data.code === 0 && data.data) {
@@ -122,20 +131,15 @@ const fetchUsage = async () => {
     } else {
       throw new Error(data.message || '获取用量失败')
     }
-  } catch (err) {
-    error.value = err.message
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : '获取用量失败'
     modelRemains.value = []
   } finally {
     loading.value = false
   }
 }
 
-const formatNumber = (num) => {
-  if (num === undefined || num === null) return '-'
-  return new Intl.NumberFormat('zh-CN').format(num)
-}
-
-const formatTime = (timestamp) => {
+const formatTime = (timestamp: number) => {
   if (!timestamp) return '-'
   const date = new Date(timestamp)
   const hours = String(date.getUTCHours()).padStart(2, '0')
@@ -143,12 +147,12 @@ const formatTime = (timestamp) => {
   return `${hours}:${minutes}(UTC+8)`
 }
 
-const formatTimeRange = (start, end) => {
+const formatTimeRange = (start: number, end: number) => {
   if (!start || !end) return '-'
   return `${formatTime(start)}-${formatTime(end).replace('(UTC+8)', '')}`
 }
 
-const formatRemainsTime = (seconds) => {
+const formatRemainsTime = (seconds: number) => {
   if (!seconds) return '-'
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
