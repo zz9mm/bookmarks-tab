@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <div class="config-item">
+    <div class="config-item" v-if="!modelValue?.showAllModels">
       <label>默认显示模型</label>
       <select :value="modelValue?.defaultModel || ''" @change="updateConfig('defaultModel', ($event.target as HTMLSelectElement).value)">
         <option value="">请先查询模型</option>
