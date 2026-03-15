@@ -103,7 +103,7 @@ const queryModels = async () => {
   }
 }
 
-const updateConfig = (key: keyof MinimaxConfig, value: string | boolean) => {
+const updateConfig = (key: keyof MinimaxConfig, value: string | boolean | string[]) => {
   const current = props.modelValue || {}
   emit('update:modelValue', {
     ...current,
