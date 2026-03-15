@@ -2,12 +2,25 @@
   <div class="config-content">
     <div class="config-item">
       <label>API Key</label>
-      <input type="password" :value="modelValue?.apiKey" @input="updateConfig('apiKey', ($event.target as HTMLInputElement).value)" placeholder="输入 Minimax API Key">
+      <div class="api-key-row">
+        <input type="password" :value="modelValue?.apiKey" @input="updateConfig('apiKey', ($event.target as HTMLInputElement).value)" placeholder="输入 Minimax API Key">
+        <button class="query-models-btn" @click="queryModels" :disabled="!modelValue?.apiKey || querying">
+          {{ querying ? '查询中...' : '查询模型' }}
+        </button>
+      </div>
     </div>
+
     <div class="config-item">
       <label>默认显示模型</label>
-      <input type="text" :value="modelValue?.defaultModel" @input="updateConfig('defaultModel', ($event.target as HTMLInputElement).value)" placeholder="如: abab6.5s-chat">
+      <select :value="modelValue?.defaultModel || ''" @change="updateConfig('defaultModel', ($event.target as HTMLSelectElement).value)">
+        <option value="">请先查询模型</option>
+        <option v-for="model in availableModels" :key="model" :value="model">{{ model }}</option>
+      </select>
+      <div v-if="availableModels.length > 0" class="model-list-hint">
+        共 {{ availableModels.length }} 个可用模型
+      </div>
     </div>
+
     <div class="config-item checkbox-item">
       <label>
         <input type="checkbox" :checked="modelValue?.showAllModels" @change="updateConfig('showAllModels', ($event.target as HTMLInputElement).checked)">
@@ -18,6 +31,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+
 interface MinimaxConfig {
   apiKey?: string
   defaultModel?: string
@@ -31,6 +46,47 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: MinimaxConfig): void
 }>()
+
+const availableModels = ref<string[]>([])
+const querying = ref(false)
+
+// 当 API Key 变化时清空模型列表
+watch(() => props.modelValue?.apiKey, () => {
+  availableModels.value = []
+})
+
+const queryModels = async () => {
+  if (!props.modelValue?.apiKey) return
+
+  querying.value = true
+
+  try {
+    const response = await fetch('https://www.minimaxi.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${props.modelValue.apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({})) as { error?: { message?: string } }
+      throw new Error(errData.error?.message || `请求失败: ${response.status}`)
+    }
+
+    const data = await response.json() as { data?: { id: string }[] }
+    if (data.data && Array.isArray(data.data)) {
+      availableModels.value = data.data.map(m => m.id)
+    } else {
+      throw new Error('获取模型列表失败')
+    }
+  } catch (err: unknown) {
+    console.error('查询模型失败:', err)
+    alert(err instanceof Error ? err.message : '查询模型失败')
+  } finally {
+    querying.value = false
+  }
+}
 
 const updateConfig = (key: keyof MinimaxConfig, value: string | boolean) => {
   const current = props.modelValue || {}
@@ -59,8 +115,39 @@ const updateConfig = (key: keyof MinimaxConfig, value: string | boolean) => {
   color: #333;
 }
 
+.api-key-row {
+  display: flex;
+  gap: 8px;
+}
+
+.api-key-row input {
+  flex: 1;
+}
+
+.query-models-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.query-models-btn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.query-models-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .config-item input[type="text"],
-.config-item input[type="password"] {
+.config-item input[type="password"],
+.config-item select {
   padding: 6px 10px;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
@@ -68,9 +155,16 @@ const updateConfig = (key: keyof MinimaxConfig, value: string | boolean) => {
 }
 
 .config-item input[type="text"]:focus,
-.config-item input[type="password"]:focus {
+.config-item input[type="password"]:focus,
+.config-item select:focus {
   outline: none;
   border-color: #4f46e5;
+}
+
+.model-list-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
 }
 
 .checkbox-item {
