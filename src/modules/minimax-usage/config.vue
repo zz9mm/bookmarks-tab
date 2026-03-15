@@ -61,7 +61,7 @@ const queryModels = async () => {
   querying.value = true
 
   try {
-    const response = await fetch('https://www.minimaxi.com/v1/models', {
+    const response = await fetch('https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${props.modelValue.apiKey}`,
@@ -70,15 +70,17 @@ const queryModels = async () => {
     })
 
     if (!response.ok) {
-      const errData = await response.json().catch(() => ({})) as { error?: { message?: string } }
-      throw new Error(errData.error?.message || `请求失败: ${response.status}`)
+      const errData = await response.json().catch(() => ({})) as { message?: string }
+      throw new Error(errData.message || `请求失败: ${response.status}`)
     }
 
-    const data = await response.json() as { data?: { id: string }[] }
-    if (data.data && Array.isArray(data.data)) {
-      availableModels.value = data.data.map(m => m.id)
+    const data = await response.json() as { model_remains?: { model_name: string }[], code?: number, data?: { model_name: string }, message?: string }
+    if (data.model_remains && Array.isArray(data.model_remains)) {
+      availableModels.value = data.model_remains.map(m => m.model_name)
+    } else if (data.code === 0 && data.data) {
+      availableModels.value = [data.data.model_name]
     } else {
-      throw new Error('获取模型列表失败')
+      throw new Error(data.message || '获取模型列表失败')
     }
   } catch (err: unknown) {
     console.error('查询模型失败:', err)
