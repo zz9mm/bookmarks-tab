@@ -72,7 +72,13 @@
         <button class="config-close" @click="$emit('close-config')">&times;</button>
       </div>
       <div class="config-content">
-        <component :is="configComponent" :model-value="tempConfig?.[currentConfigKey]" @update:model-value="handleConfigUpdate" :config="tempConfig" @update:config="handleConfigUpdateFull" />
+        <component
+          :is="configComponent"
+          :model-value="configModuleType === 'minimax-usage' ? tempConfig : tempConfig?.[currentConfigKey]"
+          @update:model-value="handleConfigUpdate"
+          :config="tempConfig"
+          @update:config="handleConfigUpdateFull"
+        />
       </div>
     </div>
 
@@ -106,6 +112,8 @@ interface TempConfig {
   fontFamily?: string
   textIndent?: number
   apiKey?: string
+  defaultModel?: string
+  showAllModels?: boolean
   [key: string]: unknown
 }
 
@@ -163,9 +171,14 @@ const handleFileImport = (event: Event) => {
 }
 
 const handleConfigUpdate = (value: unknown) => {
-  const key = currentConfigKey.value
-  if (key) {
-    emit('update-config', key, value)
+  if (props.configModuleType === 'minimax-usage') {
+    // minimax-usage 传递整个配置对象
+    emit('update-config', 'minimax-usage', value)
+  } else {
+    const key = currentConfigKey.value
+    if (key) {
+      emit('update-config', key, value)
+    }
   }
 }
 

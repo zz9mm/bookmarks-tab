@@ -14,8 +14,8 @@
 
       <div v-else class="minimax-result">
         <div v-if="error" class="minimax-error">{{ error }}</div>
-        <div v-else-if="modelRemains.length > 0" class="minimax-data">
-          <div v-for="model in modelRemains" :key="model.model_name" class="model-card">
+        <div v-else-if="displayedModels.length > 0" class="minimax-data">
+          <div v-for="model in displayedModels" :key="model.model_name" class="model-card">
             <div class="model-name">{{ model.model_name }}</div>
             <div class="model-stats">
               <div class="stat-item">
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 interface ModelRemain {
   model_name: string
@@ -55,7 +55,18 @@ interface ModelRemain {
 
 const props = defineProps<{
   apiKey?: string
+  defaultModel?: string
+  showAllModels?: boolean
 }>()
+
+const displayedModels = computed(() => {
+  if (!modelRemains.value.length) return []
+  if (props.showAllModels) return modelRemains.value
+  if (props.defaultModel) {
+    return modelRemains.value.filter(m => m.model_name === props.defaultModel)
+  }
+  return [modelRemains.value[0]]
+})
 
 const loading = ref(false)
 const error = ref('')

@@ -219,7 +219,9 @@ export default {
     const getModuleMinimaxConfig = (side, index) => {
       const config = getModuleConfig(side, index, 'minimax-usage')
       return {
-        apiKey: config.apiKey || ''
+        apiKey: config.apiKey || '',
+        defaultModel: config.defaultModel || '',
+        showAllModels: config.showAllModels || false
       }
     }
 
