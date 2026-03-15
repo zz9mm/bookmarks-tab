@@ -4,60 +4,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Edge 浏览器扩展，在新标签页显示书签快速访问界面。使用 Chrome Extensions Manifest V3。
+Edge 浏览器扩展，在新标签页显示书签快速访问界面。使用 Chrome Extensions Manifest V3 + Vue 3 + Vite。
 
 ## Development Commands
 
 ### Load Extension in Edge
-1. Open `edge://extensions/`
-2. Enable "Developer mode" (右上角)
-3. Click "Load unpacked" (加载已解压的扩展程序)
-4. Select this project folder
+1. Run `npm run build` to build the extension
+2. Open `edge://extensions/`
+3. Enable "Developer mode" (右上角)
+4. Click "Load unpacked" (加载已解压的扩展程序)
+5. Select the `dist` folder
 
-### No Build Process Required
-This is a plain JavaScript extension - no build tools needed. Edit source files directly and reload the extension in Edge.
+### Development
+```bash
+npm run dev      # Start dev server
+npm run build    # Build for production
+npm run preview  # Preview production build
+```
 
 ### Reload Extension
-After making changes, go to `edge://extensions/` and click the refresh button on the extension, or toggle developer mode off and on.
+After making changes, rebuild and go to `edge://extensions/` to reload.
 
 ## Architecture
 
 ### File Structure
 - `manifest.json` - Extension config, defines permissions and overrides newtab
-- `newtab.html` - Main HTML entry point
-- `newtab.css` - All styles
-- `newtab.js` - Main application logic
+- `index.html` - Vite entry point
+- `src/main.js` - Vue app entry
+- `src/App.vue` - Main application component
+- `src/components/` - Vue components
+- `src/styles/main.css` - Global styles (Tailwind CSS)
 - `icons/` - Extension icons (16/32/48/128px)
 
 ### Key Technologies
+- Vue 3 + Vite
+- Ant Design Vue 4.x
+- Tailwind CSS 4.x
 - Chrome Extensions API (Manifest V3)
 - chrome.bookmarks API for reading bookmarks
-- localStorage for persisting user preferences (layout, search engine, module configs)
+- localStorage for persisting user preferences
 
-### Data Flow
-1. `init()` on DOMContentLoaded loads configs from localStorage
-2. `loadBookmarks()` calls chrome.bookmarks.getTree() to fetch bookmark data
-3. Bookmarks are rendered via `renderBookmarksSeparate()` - separates direct bookmarks (quick access) from subfolders (folder tree)
-4. Layout state stored in `leftModules` and `rightModules` arrays, persisted to localStorage
-
-### Module System
-Four module types defined in `moduleTemplates`:
-- `bookmark-search` - Search bookmarks as you type
-- `folder` - Tree view of bookmark folders with collapse/expand
-- `web-search` - Web search with engine dropdown (Bing/Baidu/Google)
-- `quick-access` - Grid of bookmark icons from bookmarks bar
-
-Each module can be added to left or right panel via settings panel. Some modules have config options (quick-access: cols count, web-search: default engine).
-
-### State Variables
-- `leftModules` / `rightModules` - Current layout
-- `moduleConfigs` - Per-module configuration (stored by key like "left-0")
-- `allBookmarks` - Flattened bookmark list for search
-- `currentEngine` - Default search engine
-
-## Important Implementation Notes
-
-- Uses Google Favicon API (`https://www.google.com/s2/favicons`) as fallback for site favicons
-- findBookmarksBar() looks for node with id "1" or title "书签栏" / "Bookmarks Bar"
-- Bookmarks bar direct children become "quick access" items, subfolders become folder tree
-- Extension overrides newtab page via `chrome_url_overrides` in manifest
+### Module Components
+- `BookmarkSearch` - Search bookmarks as you type
+- `FolderTree` - Tree view of bookmark folders with collapse/expand
+- `WebSearch` - Web search with engine dropdown (Bing/Baidu/Google)
+- `QuickAccess` - Grid of bookmark icons from bookmarks bar
+- `Title` - Custom text display
+- `MinimaxUsage` - API usage tracking
