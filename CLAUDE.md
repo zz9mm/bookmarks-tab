@@ -51,3 +51,18 @@ After making changes, rebuild and go to `edge://extensions/` to reload.
 - `QuickAccess` - Grid of bookmark icons from bookmarks bar
 - `Title` - Custom text display
 - `MinimaxUsage` - API usage tracking
+
+### Module Structure
+Each module follows a consistent pattern:
+- `index.vue` - Main module component
+- `config.vue` - Configuration panel for the module (optional)
+
+Modules are registered in `src/modules/types.ts` and configured via localStorage.
+
+### Composables
+- `src/composables/useFavicon.ts` - Fetcher for website favicons
+
+### Data Flow
+- User preferences: localStorage (key: `bookmarks-tab-config`)
+- Bookmarks: Chrome `chrome.bookmarks` API
+- Module layout: Configurable top/left/right regions
