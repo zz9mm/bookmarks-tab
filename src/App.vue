@@ -274,14 +274,20 @@ export default {
     }
 
     const updateConfig = (key, value) => {
-      tempConfig[key] = value
-
       const configKey = getModuleConfigKey(configSide.value, configIndex.value)
-      moduleConfigs[configKey] = { ...tempConfig }
 
-      if (configModuleType.value === 'web-search' && key === 'engine') {
-        currentEngine.value = value
-        localStorage.setItem('searchEngine', value)
+      if (configModuleType.value === 'minimax-usage') {
+        // minimax-usage 模块直接保存整个配置对象
+        moduleConfigs[configKey] = { ...value }
+        Object.assign(tempConfig, value)
+      } else {
+        tempConfig[key] = value
+        moduleConfigs[configKey] = { ...tempConfig }
+
+        if (configModuleType.value === 'web-search' && key === 'engine') {
+          currentEngine.value = value
+          localStorage.setItem('searchEngine', value)
+        }
       }
 
       saveModuleConfigs()
