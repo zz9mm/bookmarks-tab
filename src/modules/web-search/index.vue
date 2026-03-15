@@ -30,21 +30,20 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { searchEngines, getEngineIcon } from '../composables/useFavicon'
+import { searchEngines, getEngineIcon } from '../../composables/useFavicon'
 
 type EngineKey = 'bing' | 'baidu' | 'google'
 
-const props = defineProps({
-  defaultEngine: {
-    type: String,
-    default: 'bing'
-  }
-})
+const props = defineProps<{
+  defaultEngine?: string
+}>()
 
-const emit = defineEmits(['engineChange'])
+const emit = defineEmits<{
+  (e: 'engineChange', engine: string): void
+}>()
 
 const searchQuery = ref('')
-const currentEngine = ref<EngineKey>(props.defaultEngine as EngineKey)
+const currentEngine = ref<EngineKey>((props.defaultEngine as EngineKey) || 'bing')
 const showEngineMenu = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 

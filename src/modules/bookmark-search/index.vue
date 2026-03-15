@@ -32,19 +32,22 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import { getFavicon } from '../composables/useFavicon'
+import { getFavicon } from '../../composables/useFavicon'
 
-const props = defineProps({
-  bookmarks: {
-    type: Array,
-    default: () => []
-  }
-})
+interface Bookmark {
+  id: string
+  title: string
+  url: string
+}
+
+const props = defineProps<{
+  bookmarks?: Bookmark[]
+}>()
 
 const searchQuery = ref('')
-const searchResults = ref([])
+const searchResults = ref<Bookmark[]>([])
 const showDropdown = ref(false)
 
 const handleSearch = () => {
@@ -56,7 +59,7 @@ const handleSearch = () => {
     return
   }
 
-  searchResults.value = props.bookmarks
+  searchResults.value = (props.bookmarks || [])
     .filter(b => b.title.toLowerCase().includes(query))
     .slice(0, 8)
 }

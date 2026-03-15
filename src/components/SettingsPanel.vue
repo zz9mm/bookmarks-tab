@@ -72,80 +72,7 @@
         <button class="config-close" @click="$emit('close-config')">&times;</button>
       </div>
       <div class="config-content">
-        <!-- Quick Access Config -->
-        <div v-if="configModuleType === 'quick-access'" class="config-item">
-          <label>每行显示图标数量</label>
-          <select :value="tempConfig?.cols" @change="handleUpdateConfig('cols', parseInt(($event.target as HTMLSelectElement).value))">
-            <option :value="3">3 个</option>
-            <option :value="4">4 个</option>
-            <option :value="5">5 个</option>
-            <option :value="6">6 个</option>
-            <option :value="8">8 个</option>
-            <option :value="10">10 个</option>
-          </select>
-        </div>
-        <!-- Web Search Config -->
-        <div v-if="configModuleType === 'web-search'" class="config-item">
-          <label>默认搜索引擎</label>
-          <select :value="tempConfig?.engine" @change="handleUpdateConfig('engine', ($event.target as HTMLSelectElement).value)">
-            <option value="bing">Bing</option>
-            <option value="baidu">百度</option>
-            <option value="google">Google</option>
-          </select>
-        </div>
-        <!-- Title Config -->
-        <template v-if="configModuleType === 'title'">
-          <div class="config-item">
-            <label>标题文字</label>
-            <input type="text" :value="tempConfig?.text" @input="handleUpdateConfig('text', ($event.target as HTMLInputElement).value)" placeholder="请输入标题文字">
-          </div>
-          <div class="config-item">
-            <label>文字大小</label>
-            <select :value="tempConfig?.fontSize" @change="handleUpdateConfig('fontSize', parseInt(($event.target as HTMLSelectElement).value))">
-              <option :value="16">16px</option>
-              <option :value="20">20px</option>
-              <option :value="24">24px</option>
-              <option :value="28">28px</option>
-              <option :value="32">32px</option>
-              <option :value="36">36px</option>
-              <option :value="40">40px</option>
-            </select>
-          </div>
-          <div class="config-item">
-            <label>对齐方式</label>
-            <select :value="tempConfig?.align" @change="handleUpdateConfig('align', ($event.target as HTMLSelectElement).value)">
-              <option value="left">靠左</option>
-              <option value="center">居中</option>
-              <option value="right">靠右</option>
-            </select>
-          </div>
-          <div class="config-item">
-            <label>字体</label>
-            <select :value="tempConfig?.fontFamily" @change="handleUpdateConfig('fontFamily', ($event.target as HTMLSelectElement).value)">
-              <option value="inherit">默认字体</option>
-              <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
-              <option value="SimSun, serif">宋体</option>
-              <option value="KaiTi, cursive">楷体</option>
-              <option value="Arial, sans-serif">Arial</option>
-              <option value="Times New Roman, serif">Times New Roman</option>
-              <option value="Courier New, monospace">Courier New</option>
-            </select>
-          </div>
-          <div class="config-item">
-            <label>首行缩进</label>
-            <select :value="tempConfig?.textIndent" @change="handleUpdateConfig('textIndent', parseInt(($event.target as HTMLSelectElement).value))">
-              <option :value="0">无</option>
-              <option :value="2">2字符</option>
-              <option :value="4">4字符</option>
-              <option :value="8">8字符</option>
-            </select>
-          </div>
-        </template>
-        <!-- Minimax Usage Config -->
-        <div v-if="configModuleType === 'minimax-usage'" class="config-item">
-          <label>API Key</label>
-          <input type="password" :value="tempConfig?.apiKey" @input="handleUpdateConfig('apiKey', ($event.target as HTMLInputElement).value)" placeholder="输入 Minimax API Key">
-        </div>
+        <component :is="configComponent" :model-value="tempConfig?.[currentConfigKey]" @update:model-value="handleConfigUpdate" :config="tempConfig" @update:config="handleConfigUpdateFull" />
       </div>
     </div>
 
@@ -154,11 +81,20 @@
 </template>
 
 <script setup lang="ts">
-type ModuleType = 'bookmark-search' | 'folder' | 'web-search' | 'quick-access' | 'title' | 'minimax-usage'
+import { computed } from 'vue'
+import { moduleList } from '../modules/types'
 
-interface ModuleItem {
-  type: ModuleType
-  name: string
+// 动态导入模块配置组件
+const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
+const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
+const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
+const MinimaxUsageConfig = defineAsyncComponent(() => import('../modules/minimax-usage/config.vue'))
+
+const configComponents: Record<string, any> = {
+  'web-search': WebSearchConfig,
+  'quick-access': QuickAccessConfig,
+  'title': TitleConfig,
+  'minimax-usage': MinimaxUsageConfig
 }
 
 interface TempConfig {
@@ -170,9 +106,10 @@ interface TempConfig {
   fontFamily?: string
   textIndent?: number
   apiKey?: string
+  [key: string]: unknown
 }
 
-defineProps<{
+const props = defineProps<{
   show: boolean
   showConfigPanel: boolean
   configModuleType: string
@@ -186,7 +123,7 @@ const emit = defineEmits<{
   (e: 'import'): void
   (e: 'export'): void
   (e: 'file-import', event: Event): void
-  (e: 'add-module', type: ModuleType, side: 'top' | 'left' | 'right'): void
+  (e: 'add-module', type: string, side: 'top' | 'left' | 'right'): void
   (e: 'remove-module', side: string, index: number): void
   (e: 'move-module', side: string, index: number, direction: number): void
   (e: 'open-config', side: string, index: number, type: string): void
@@ -195,32 +132,44 @@ const emit = defineEmits<{
   (e: 'reset-layout'): void
 }>()
 
-const moduleNames: Record<ModuleType, string> = {
-  'bookmark-search': '书签搜索',
-  'folder': '收藏夹',
-  'web-search': '网页搜索',
-  'quick-access': '快速访问',
-  'title': '文本',
-  'minimax-usage': 'Minimax 用量'
+const availableModules = moduleList
+
+const getModuleName = (type: string): string => {
+  const module = moduleList.find(m => m.type === type)
+  return module?.name || type
 }
 
-const availableModules: ModuleItem[] = [
-  { type: 'bookmark-search', name: '书签搜索' },
-  { type: 'folder', name: '收藏夹' },
-  { type: 'web-search', name: '网页搜索' },
-  { type: 'quick-access', name: '快速访问' },
-  { type: 'title', name: '文本' },
-  { type: 'minimax-usage', name: 'Minimax 用量' }
-]
+const hasConfig = (type: string): boolean => {
+  const module = moduleList.find(m => m.type === type)
+  return module?.hasConfig || false
+}
 
-const getModuleName = (type: string): string => moduleNames[type as ModuleType] || type
-const hasConfig = (type: string): boolean => type === 'quick-access' || type === 'web-search' || type === 'title' || type === 'minimax-usage'
+const currentConfigKey = computed(() => {
+  const keyMap: Record<string, string> = {
+    'web-search': 'engine',
+    'quick-access': 'cols',
+    'title': '',
+    'minimax-usage': 'apiKey'
+  }
+  return keyMap[props.configModuleType] || ''
+})
+
+const configComponent = computed(() => {
+  return configComponents[props.configModuleType]
+})
 
 const handleFileImport = (event: Event) => {
   emit('file-import', event)
 }
 
-const handleUpdateConfig = (key: string, value: unknown) => {
+const handleConfigUpdate = (value: unknown) => {
+  const key = currentConfigKey.value
+  if (key) {
+    emit('update-config', key, value)
+  }
+}
+
+const handleConfigUpdateFull = (key: string, value: unknown) => {
   emit('update-config', key, value)
 }
 </script>

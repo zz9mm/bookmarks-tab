@@ -18,19 +18,22 @@
   </div>
 </template>
 
-<script setup>
-import { getFavicon } from '../composables/useFavicon'
+<script setup lang="ts">
+import { getFavicon } from '../../composables/useFavicon'
 
-const props = defineProps({
-  folder: {
-    type: Object,
-    required: true
-  },
-  collapsedFolders: {
-    type: Array,
-    default: () => []
-  }
-})
+interface FolderNode {
+  id: string
+  title: string
+  url?: string
+  children?: FolderNode[]
+}
 
-defineEmits(['toggle'])
+defineProps<{
+  folder: FolderNode
+  collapsedFolders: string[]
+}>()
+
+defineEmits<{
+  (e: 'toggle', id: string): void
+}>()
 </script>

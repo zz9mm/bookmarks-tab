@@ -53,12 +53,9 @@ interface ModelRemain {
   remains_time: number
 }
 
-const props = defineProps({
-  apiKey: {
-    type: String,
-    default: ''
-  }
-})
+const props = defineProps<{
+  apiKey?: string
+}>()
 
 const loading = ref(false)
 const error = ref('')
@@ -201,33 +198,6 @@ defineExpose({ fetchUsage })
 .minimax-refresh:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.minimax-config {
-  display: flex;
-  gap: 8px;
-}
-
-.minimax-key-input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.minimax-save-btn {
-  padding: 8px 16px;
-  background: #4f46e5;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.minimax-save-btn:hover {
-  background: #4338ca;
 }
 
 .minimax-result {

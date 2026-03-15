@@ -35,28 +35,32 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
+import { getFavicon } from '../../composables/useFavicon'
 import FolderItem from './FolderItem.vue'
-import { getFavicon } from '../composables/useFavicon'
 
-const props = defineProps({
-  folders: {
-    type: Array,
-    default: () => []
-  }
-})
+interface FolderNode {
+  id: string
+  title: string
+  url?: string
+  children?: FolderNode[]
+}
+
+const props = defineProps<{
+  folders?: FolderNode[]
+}>()
 
 const filterQuery = ref('')
-const collapsedFolders = ref([])
+const collapsedFolders = ref<string[]>([])
 
 const filteredFolders = computed(() => {
-  if (!filterQuery.value) return props.folders
+  if (!filterQuery.value) return props.folders || []
   const query = filterQuery.value.toLowerCase()
-  return props.folders.filter(f => f.title.toLowerCase().includes(query))
+  return (props.folders || []).filter(f => f.title.toLowerCase().includes(query))
 })
 
-const toggleFolder = (id) => {
+const toggleFolder = (id: string) => {
   const index = collapsedFolders.value.indexOf(id)
   if (index >= 0) {
     collapsedFolders.value.splice(index, 1)

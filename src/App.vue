@@ -72,14 +72,15 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
-import BookmarkSearch from './components/BookmarkSearch.vue'
-import FolderTree from './components/FolderTree.vue'
-import WebSearch from './components/WebSearch.vue'
-import QuickAccess from './components/QuickAccess.vue'
-import Title from './components/Title.vue'
-import MinimaxUsage from './components/MinimaxUsage.vue'
+import { ref, reactive, onMounted } from 'vue'
+import BookmarkSearch from './modules/bookmark-search/index.vue'
+import FolderTree from './modules/folder/index.vue'
+import WebSearch from './modules/web-search/index.vue'
+import QuickAccess from './modules/quick-access/index.vue'
+import Title from './modules/title/index.vue'
+import MinimaxUsage from './modules/minimax-usage/index.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
+import { moduleList, defaultModuleConfigs } from './modules/types'
 
 export default {
   name: 'App',
@@ -93,25 +94,6 @@ export default {
     SettingsPanel
   },
   setup() {
-    // Module definitions
-    const availableModules = [
-      { type: 'bookmark-search', name: '书签搜索' },
-      { type: 'folder', name: '收藏夹' },
-      { type: 'web-search', name: '网页搜索' },
-      { type: 'quick-access', name: '快速访问' },
-      { type: 'title', name: '文本' },
-      { type: 'minimax-usage', name: 'Minimax 用量' }
-    ]
-
-    const moduleNames = {
-      'bookmark-search': '书签搜索',
-      'folder': '收藏夹',
-      'web-search': '网页搜索',
-      'quick-access': '快速访问',
-      'title': '文本',
-      'minimax-usage': 'Minimax 用量'
-    }
-
     // State
     const showSettings = ref(false)
     const showConfigPanel = ref(false)
@@ -149,7 +131,6 @@ export default {
     }
 
     const exportLayout = () => {
-      // 深拷贝避免引用问题
       const data = {
         top: JSON.parse(JSON.stringify(topModules.value)),
         left: JSON.parse(JSON.stringify(leftModules.value)),
@@ -194,24 +175,22 @@ export default {
       event.target.value = ''
     }
 
-    const getModuleName = (type) => moduleNames[type] || type
+    const getModuleName = (type) => {
+      const module = moduleList.find(m => m.type === type)
+      return module?.name || type
+    }
 
-    const hasConfig = (type) => type === 'quick-access' || type === 'web-search' || type === 'title' || type === 'minimax-usage'
+    const hasConfig = (type) => {
+      const module = moduleList.find(m => m.type === type)
+      return module?.hasConfig || false
+    }
 
     const getModuleConfigKey = (side, index) => `${side}-${index}`
 
     const getModuleConfig = (side, index, type) => {
       const key = getModuleConfigKey(side, index)
       if (!moduleConfigs[key]) {
-        if (type === 'quick-access') {
-          moduleConfigs[key] = { cols: 4 }
-        } else if (type === 'web-search') {
-          moduleConfigs[key] = { engine: 'bing' }
-        } else if (type === 'title') {
-          moduleConfigs[key] = { text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 }
-        } else if (type === 'minimax-usage') {
-          moduleConfigs[key] = { apiKey: '' }
-        }
+        moduleConfigs[key] = { ...defaultModuleConfigs[type] }
       }
       return moduleConfigs[key] || {}
     }
@@ -438,7 +417,7 @@ export default {
       directBookmarks,
       subfolders,
       currentEngine,
-      availableModules,
+      availableModules: moduleList,
       toggleSettings,
       closeSettings,
       exportLayout,
