@@ -74,7 +74,7 @@
       <div class="config-content">
         <component
           :is="configComponent"
-          :model-value="configModuleType === 'minimax-usage' ? tempConfig : tempConfig?.[currentConfigKey]"
+          :model-value="configModuleType === 'minimax-usage' || configModuleType === 'quick-access' ? tempConfig : tempConfig?.[currentConfigKey]"
           @update:model-value="handleConfigUpdate"
           :config="tempConfig"
           @update:config="handleConfigUpdateFull"
@@ -155,7 +155,7 @@ const hasConfig = (type: string): boolean => {
 const currentConfigKey = computed(() => {
   const keyMap: Record<string, string> = {
     'web-search': 'engine',
-    'quick-access': 'cols',
+    'quick-access': '',
     'title': '',
     'minimax-usage': 'apiKey'
   }
@@ -171,9 +171,9 @@ const handleFileImport = (event: Event) => {
 }
 
 const handleConfigUpdate = (value: unknown) => {
-  if (props.configModuleType === 'minimax-usage') {
-    // minimax-usage 传递整个配置对象
-    emit('update-config', 'minimax-usage', value)
+  if (props.configModuleType === 'minimax-usage' || props.configModuleType === 'quick-access') {
+    // minimax-usage 和 quick-access 传递整个配置对象
+    emit('update-config', props.configModuleType, value)
   } else {
     const key = currentConfigKey.value
     if (key) {

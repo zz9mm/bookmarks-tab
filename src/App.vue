@@ -36,7 +36,7 @@
           <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
           <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
           <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('top', index)" @engineChange="updateEngine" />
-          <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" />
+          <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" :backgroundImage="getModuleBackgroundImage('top', index)" />
           <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('top', index)" />
           <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('top', index)" />
         </template>
@@ -49,7 +49,7 @@
             <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
             <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('left', index)" @engineChange="updateEngine" />
-            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" />
+            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" :backgroundImage="getModuleBackgroundImage('left', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('left', index)" />
             <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('left', index)" />
           </template>
@@ -61,7 +61,7 @@
             <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
             <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('right', index)" @engineChange="updateEngine" />
-            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" />
+            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" :backgroundImage="getModuleBackgroundImage('right', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('right', index)" />
             <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('right', index)" />
           </template>
@@ -200,6 +200,11 @@ export default {
       return config.cols || 4
     }
 
+    const getModuleBackgroundImage = (side, index) => {
+      const config = getModuleConfig(side, index, 'quick-access')
+      return config.backgroundImage || ''
+    }
+
     const getModuleEngine = (side, index) => {
       const config = getModuleConfig(side, index, 'web-search')
       return config.engine || 'bing'
@@ -276,8 +281,8 @@ export default {
     const updateConfig = (key, value) => {
       const configKey = getModuleConfigKey(configSide.value, configIndex.value)
 
-      if (configModuleType.value === 'minimax-usage') {
-        // minimax-usage 模块直接保存整个配置对象
+      if (configModuleType.value === 'minimax-usage' || configModuleType.value === 'quick-access') {
+        // minimax-usage 和 quick-access 模块直接保存整个配置对象
         moduleConfigs[configKey] = { ...value }
         Object.assign(tempConfig, value)
       } else {
@@ -434,6 +439,7 @@ export default {
       getModuleName,
       hasConfig,
       getModuleCols,
+      getModuleBackgroundImage,
       getModuleEngine,
       getModuleTitleConfig,
       getModuleMinimaxConfig,
