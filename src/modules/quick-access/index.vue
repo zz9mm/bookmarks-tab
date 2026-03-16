@@ -1,7 +1,7 @@
 <template>
   <div class="module-box quick-access-section">
     <div class="section-title">快速访问</div>
-    <div v-if="bookmarks.length > 0" class="quick-access-grid-container">
+    <div v-if="bookmarks && bookmarks.length > 0" class="quick-access-grid-container">
       <div class="quick-access-grid" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
         <a
           v-for="bookmark in bookmarks"
@@ -10,12 +10,23 @@
           :href="bookmark.url"
           target="_blank"
         >
-          <img
-            class="quick-access-icon"
-            :src="getIcon(bookmark.url)"
-            @error="handleIconError($event, bookmark.url)"
-            alt=""
-          >
+          <div class="icon-wrapper">
+            <img
+              v-show="iconLoaded[bookmark.id]"
+              class="quick-access-icon"
+              :src="getIcon(bookmark.url)"
+              @load="iconLoaded[bookmark.id] = true"
+              @error="iconLoaded[bookmark.id] = false"
+              alt=""
+            >
+            <div
+              v-show="!iconLoaded[bookmark.id]"
+              class="fallback-icon"
+              :style="{ backgroundColor: getColor(bookmark.url) }"
+            >
+              {{ getInitial(bookmark.url) }}
+            </div>
+          </div>
           <span class="quick-access-title" :title="bookmark.title">{{ bookmark.title }}</span>
         </a>
       </div>
@@ -25,7 +36,8 @@
 </template>
 
 <script setup lang="ts">
-import { getFavicon } from '../../composables/useFavicon'
+import { reactive, watch } from 'vue'
+import { getFavicon, getDomain } from '../../composables/useFavicon'
 
 interface Bookmark {
   id: string
@@ -38,15 +50,40 @@ const props = defineProps<{
   cols?: number
 }>()
 
+const iconLoaded = reactive<Record<string, boolean>>({})
+
+// 监听 bookmarks 变化时重置状态
+watch(() => props.bookmarks, (newBookmarks) => {
+  if (newBookmarks) {
+    newBookmarks.forEach(bm => {
+      if (!(bm.id in iconLoaded)) {
+        iconLoaded[bm.id] = false
+      }
+    })
+  }
+}, { immediate: true })
+
 const getIcon = (url: string) => getFavicon(url, 64)
 
-const handleIconError = (event: Event, url: string) => {
-  const target = event.target as HTMLImageElement
-  target.src = getFavicon(url, 64)
-  target.onerror = () => {
-    target.src = 'data:image/svg+xml,' + encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#666" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'
-    )
+const getInitial = (url: string): string => {
+  const domain = getDomain(url)
+  if (domain) {
+    return domain.charAt(0).toUpperCase()
   }
+  return '?'
+}
+
+const getColor = (url: string): string => {
+  const domain = getDomain(url)
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F8B500', '#00C9A7', '#FF6F61', '#6B5B95', '#88B04B'
+  ]
+  let hash = 0
+  for (let i = 0; i < domain.length; i++) {
+    hash = domain.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return colors[Math.abs(hash) % colors.length]
 }
 </script>
