@@ -7,7 +7,10 @@
         <input type="file" accept="image/*,.webm" @change="handleBackgroundImageSelect" ref="backgroundImageInput">
       </div>
       <div v-if="backgroundImage" class="config-item">
-        <div class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
+        <video v-if="isBackgroundVideo" class="background-preview" autoplay loop muted playsinline>
+          <source :src="backgroundImage" type="video/webm">
+        </video>
+        <div v-else class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
         <button class="clear-background-btn" @click="clearBackgroundImage">清除背景图</button>
       </div>
     </div>
@@ -141,6 +144,10 @@ const props = defineProps<{
 
 // 将 props 转换为响应式
 const { backgroundImage } = toRefs(props)
+
+const isBackgroundVideo = computed(() => {
+  return backgroundImage.value?.startsWith('data:video/')
+})
 
 // 计算背景图样式
 const backgroundImageStyle = computed(() => {
