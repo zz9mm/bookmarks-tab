@@ -3,11 +3,12 @@
     <!-- Page Background -->
     <video
       v-if="backgroundImage && isVideo"
+      ref="bgVideoRef"
       class="page-background-video"
       autoplay
-      loop
       muted
       playsinline
+      @timeupdate="handleVideoTimeUpdate"
     >
       <source :src="backgroundImage" type="video/webm">
     </video>
@@ -123,11 +124,21 @@ export default {
     const rightModules = ref([])
     const moduleConfigs = reactive({})
     const backgroundImage = ref('')
+    const bgVideoRef = ref(null)
 
     // 判断是否是视频文件
     const isVideo = computed(() => {
       return backgroundImage.value && backgroundImage.value.startsWith('data:video/')
     })
+
+    // 在视频快结束时（最后0.3s）手动 seek 到开头，避免 loop 属性的卡顿
+    const handleVideoTimeUpdate = () => {
+      const video = bgVideoRef.value
+      if (!video || !video.duration) return
+      if (video.duration - video.currentTime < 0.3) {
+        video.currentTime = 0
+      }
+    }
 
     const allBookmarks = ref([])
     const directBookmarks = ref([])
@@ -476,6 +487,8 @@ export default {
       rightModules,
       backgroundImage,
       isVideo,
+      bgVideoRef,
+      handleVideoTimeUpdate,
       allBookmarks,
       directBookmarks,
       subfolders,
