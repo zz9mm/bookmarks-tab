@@ -330,7 +330,7 @@ export default {
 
     const updateBackgroundImage = (value) => {
       backgroundImage.value = value
-      saveLayoutSettings()
+      saveBackgroundImage()
     }
 
     // 监听背景图变化，更新 body class
@@ -350,7 +350,7 @@ export default {
         topModules.value = settings.top || []
         leftModules.value = settings.left || []
         rightModules.value = settings.right || []
-        backgroundImage.value = settings.backgroundImage || ''
+        backgroundImage.value = localStorage.getItem('backgroundImage') || ''
       } else {
         topModules.value = []
         leftModules.value = ['bookmark-search', 'folder']
@@ -362,9 +362,20 @@ export default {
       localStorage.setItem('layoutSettings', JSON.stringify({
         top: topModules.value,
         left: leftModules.value,
-        right: rightModules.value,
-        backgroundImage: backgroundImage.value
+        right: rightModules.value
       }))
+    }
+
+    const saveBackgroundImage = () => {
+      try {
+        if (backgroundImage.value) {
+          localStorage.setItem('backgroundImage', backgroundImage.value)
+        } else {
+          localStorage.removeItem('backgroundImage')
+        }
+      } catch (e) {
+        console.error('背景图保存失败，文件可能过大:', e)
+      }
     }
 
     const loadModuleConfigs = () => {

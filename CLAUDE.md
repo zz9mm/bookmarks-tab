@@ -25,6 +25,8 @@ npm run preview  # Preview production build
 ### Reload Extension
 After making changes, rebuild and go to `edge://extensions/` to reload.
 
+**重要：每次修改代码后必须先运行 `npm run build`，然后在 `edge://extensions/` 重新加载扩展。**
+
 ## Architecture
 
 ### File Structure
