@@ -1,5 +1,18 @@
 <template>
   <div id="app-container">
+    <!-- Page Background -->
+    <video
+      v-if="backgroundImage && isVideo"
+      class="page-background-video"
+      autoplay
+      loop
+      muted
+      playsinline
+    >
+      <source :src="backgroundImage" type="video/webm">
+    </video>
+    <div v-else-if="backgroundImage" class="page-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
+
     <!-- Settings Button -->
     <button class="settings-btn" @click.stop="toggleSettings">
       <svg viewBox="0 0 24 24" width="22" height="22">
@@ -16,6 +29,7 @@
       :top-modules="topModules"
       :left-modules="leftModules"
       :right-modules="rightModules"
+      :background-image="backgroundImage"
       @import="importLayout"
       @export="exportLayout"
       @file-import="handleFileImport"
@@ -25,18 +39,19 @@
       @open-config="openConfig"
       @close-config="closeConfig"
       @update-config="updateConfig"
+      @update-background-image="updateBackgroundImage"
       @reset-layout="resetLayout"
     />
 
     <!-- Main Layout -->
-    <div class="main-layout" @click="closeSettings">
+    <div class="main-layout" :class="{ 'has-background': backgroundImage }" @click="closeSettings">
       <!-- Top Panel -->
       <div class="top-panel">
         <template v-for="(module, index) in topModules" :key="'top-' + index">
           <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
           <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
           <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('top', index)" @engineChange="updateEngine" />
-          <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" :backgroundImage="getModuleBackgroundImage('top', index)" />
+          <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" />
           <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('top', index)" />
           <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('top', index)" />
         </template>
@@ -49,7 +64,7 @@
             <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
             <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('left', index)" @engineChange="updateEngine" />
-            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" :backgroundImage="getModuleBackgroundImage('left', index)" />
+            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('left', index)" />
             <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('left', index)" />
           </template>
@@ -61,7 +76,7 @@
             <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
             <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
             <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('right', index)" @engineChange="updateEngine" />
-            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" :backgroundImage="getModuleBackgroundImage('right', index)" />
+            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('right', index)" />
             <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('right', index)" />
           </template>
@@ -72,7 +87,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import BookmarkSearch from './modules/bookmark-search/index.vue'
 import FolderTree from './modules/folder/index.vue'
 import WebSearch from './modules/web-search/index.vue'
@@ -107,6 +122,12 @@ export default {
     const leftModules = ref([])
     const rightModules = ref([])
     const moduleConfigs = reactive({})
+    const backgroundImage = ref('')
+
+    // 判断是否是视频文件
+    const isVideo = computed(() => {
+      return backgroundImage.value && backgroundImage.value.startsWith('data:video/')
+    })
 
     const allBookmarks = ref([])
     const directBookmarks = ref([])
@@ -135,6 +156,7 @@ export default {
         top: JSON.parse(JSON.stringify(topModules.value)),
         left: JSON.parse(JSON.stringify(leftModules.value)),
         right: JSON.parse(JSON.stringify(rightModules.value)),
+        backgroundImage: backgroundImage.value,
         moduleConfigs: JSON.parse(JSON.stringify(moduleConfigs))
       }
       const json = JSON.stringify(data, null, 2)
@@ -162,6 +184,7 @@ export default {
           if (data.top) topModules.value = data.top
           if (data.left) leftModules.value = data.left
           if (data.right) rightModules.value = data.right
+          if (data.backgroundImage) backgroundImage.value = data.backgroundImage
           if (data.moduleConfigs) {
             Object.assign(moduleConfigs, data.moduleConfigs)
             saveModuleConfigs()
@@ -198,11 +221,6 @@ export default {
     const getModuleCols = (side, index) => {
       const config = getModuleConfig(side, index, 'quick-access')
       return config.cols || 4
-    }
-
-    const getModuleBackgroundImage = (side, index) => {
-      const config = getModuleConfig(side, index, 'quick-access')
-      return config.backgroundImage || ''
     }
 
     const getModuleEngine = (side, index) => {
@@ -310,6 +328,20 @@ export default {
       localStorage.setItem('searchEngine', engine)
     }
 
+    const updateBackgroundImage = (value) => {
+      backgroundImage.value = value
+      saveLayoutSettings()
+    }
+
+    // 监听背景图变化，更新 body class
+    watch(backgroundImage, (newVal) => {
+      if (newVal) {
+        document.body.classList.add('has-page-background')
+      } else {
+        document.body.classList.remove('has-page-background')
+      }
+    })
+
     // Storage
     const loadLayoutSettings = () => {
       const saved = localStorage.getItem('layoutSettings')
@@ -318,6 +350,7 @@ export default {
         topModules.value = settings.top || []
         leftModules.value = settings.left || []
         rightModules.value = settings.right || []
+        backgroundImage.value = settings.backgroundImage || ''
       } else {
         topModules.value = []
         leftModules.value = ['bookmark-search', 'folder']
@@ -329,7 +362,8 @@ export default {
       localStorage.setItem('layoutSettings', JSON.stringify({
         top: topModules.value,
         left: leftModules.value,
-        right: rightModules.value
+        right: rightModules.value,
+        backgroundImage: backgroundImage.value
       }))
     }
 
@@ -410,6 +444,9 @@ export default {
     // Lifecycle
     onMounted(() => {
       loadLayoutSettings()
+      if (backgroundImage.value) {
+        document.body.classList.add('has-page-background')
+      }
       loadModuleConfigs()
       loadSearchEnginePreference()
       loadBookmarks()
@@ -426,6 +463,8 @@ export default {
       topModules,
       leftModules,
       rightModules,
+      backgroundImage,
+      isVideo,
       allBookmarks,
       directBookmarks,
       subfolders,
@@ -439,7 +478,6 @@ export default {
       getModuleName,
       hasConfig,
       getModuleCols,
-      getModuleBackgroundImage,
       getModuleEngine,
       getModuleTitleConfig,
       getModuleMinimaxConfig,
@@ -450,7 +488,8 @@ export default {
       closeConfig,
       updateConfig,
       resetLayout,
-      updateEngine
+      updateEngine,
+      updateBackgroundImage
     }
   }
 }

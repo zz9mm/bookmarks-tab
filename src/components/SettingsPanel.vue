@@ -1,5 +1,16 @@
 <template>
   <div class="settings-panel" :class="{ show: show }" @click.stop>
+    <!-- 背景图设置 -->
+    <div class="settings-section">
+      <div class="settings-subtitle">页面背景图</div>
+      <div class="config-item">
+        <input type="file" accept="image/*,.webm" @change="handleBackgroundImageSelect" ref="backgroundImageInput">
+      </div>
+      <div v-if="backgroundImage" class="config-item">
+        <div class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
+        <button class="clear-background-btn" @click="clearBackgroundImage">清除背景图</button>
+      </div>
+    </div>
     <div class="settings-header">
       <div class="settings-title">布局设置</div>
       <div class="settings-actions">
@@ -87,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, ref, toRefs } from 'vue'
 import { moduleList } from '../modules/types'
 
 // 动态导入模块配置组件
@@ -125,7 +136,17 @@ const props = defineProps<{
   topModules?: string[]
   leftModules?: string[]
   rightModules?: string[]
+  backgroundImage?: string
 }>()
+
+// 将 props 转换为响应式
+const { backgroundImage } = toRefs(props)
+
+// 计算背景图样式
+const backgroundImageStyle = computed(() => {
+  if (!backgroundImage.value) return ''
+  return 'background-image: url(' + backgroundImage.value + ')'
+})
 
 const emit = defineEmits<{
   (e: 'import'): void
@@ -137,10 +158,34 @@ const emit = defineEmits<{
   (e: 'open-config', side: string, index: number, type: string): void
   (e: 'close-config'): void
   (e: 'update-config', key: string, value: unknown): void
+  (e: 'update-background-image', value: string): void
   (e: 'reset-layout'): void
 }>()
 
 const availableModules = moduleList
+const backgroundImageInput = ref<HTMLInputElement | null>(null)
+
+const handleBackgroundImageSelect = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const result = e.target?.result as string
+    if (result) {
+      emit('update-background-image', result)
+    }
+  }
+  reader.readAsDataURL(file)
+  // 清空 input 以便可以重复选择同一文件
+  if (backgroundImageInput.value) {
+    backgroundImageInput.value.value = ''
+  }
+}
+
+const clearBackgroundImage = () => {
+  emit('update-background-image', '')
+}
 
 const getModuleName = (type: string): string => {
   const module = moduleList.find(m => m.type === type)
@@ -186,3 +231,26 @@ const handleConfigUpdateFull = (key: string, value: unknown) => {
   emit('update-config', key, value)
 }
 </script>
+
+<style scoped>
+.background-preview {
+  width: 100%;
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.clear-background-btn {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.clear-background-btn:hover {
+  background: #ff7875;
+}
+</style>

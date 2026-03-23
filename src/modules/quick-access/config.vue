@@ -10,19 +10,6 @@
       <option :value="10">10 个</option>
     </select>
   </div>
-  <div class="config-item">
-    <label>背景图</label>
-    <input
-      type="text"
-      :value="modelValue?.backgroundImage"
-      @input="updateConfig('backgroundImage', ($event.target as HTMLInputElement).value)"
-      placeholder="输入图片地址"
-    >
-  </div>
-  <div v-if="modelValue?.backgroundImage" class="config-item">
-    <label>预览</label>
-    <div class="background-preview" :style="{ backgroundImage: `url(${modelValue.backgroundImage})` }"></div>
-  </div>
 </template>
 
 <script setup lang="ts">

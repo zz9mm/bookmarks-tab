@@ -63,6 +63,26 @@ Modules are registered in `src/modules/types.ts` and configured via localStorage
 - `src/composables/useFavicon.ts` - Fetcher for website favicons
 
 ### Data Flow
-- User preferences: localStorage (key: `bookmarks-tab-config`)
-- Bookmarks: Chrome `chrome.bookmarks` API
+- User preferences: localStorage
+  - `layoutSettings` - Module layout (top/left/right arrays)
+  - `moduleConfigs` - Individual module configurations
+  - `searchEngine` - Selected web search engine
+- Bookmarks: Chrome `chrome.bookmarks` API (loads from bookmarks bar by default)
 - Module layout: Configurable top/left/right regions
+
+### Default Layout
+- Left panel: `['bookmark-search', 'folder']`
+- Right panel: `['web-search', 'quick-access']`
+
+### Bookmark Loading
+- Loads bookmarks from the bookmarks bar (id='1' or title='书签栏'/'Bookmarks Bar')
+- Falls back to all bookmarks if bookmarks bar not found
+
+### Default Module Configs
+- `web-search`: `{ engine: 'bing' }`
+- `quick-access`: `{ cols: 4 }`
+- `title`: `{ text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 }`
+- `minimax-usage`: `{ apiKey: '', defaultModel: '', showAllModels: false }`
+
+### Favicon
+Uses Google S2 service: `https://www.google.com/s2/favicons?domain={domain}&sz={size}`

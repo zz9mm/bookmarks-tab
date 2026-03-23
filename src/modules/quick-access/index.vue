@@ -1,6 +1,5 @@
 <template>
-  <div class="module-box quick-access-section" :class="{ 'has-background': backgroundImage }">
-    <div v-if="backgroundImage" class="background-layer" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
+  <div class="module-box quick-access-section">
     <div class="content-layer">
       <div class="section-title">快速访问</div>
     <div v-if="bookmarks && bookmarks.length > 0" class="quick-access-grid-container">
@@ -51,7 +50,6 @@ interface Bookmark {
 const props = defineProps<{
   bookmarks?: Bookmark[]
   cols?: number
-  backgroundImage?: string
 }>()
 
 const iconLoaded = reactive<Record<string, boolean>>({})
