@@ -27,6 +27,10 @@ After making changes, rebuild and go to `edge://extensions/` to reload.
 
 **重要：每次修改代码后必须先运行 `npm run build`，然后在 `edge://extensions/` 重新加载扩展。**
 
+## Workflow Rules
+
+- 修改完成后**必须询问用户**是否提交代码，不要自动提交
+
 ## Architecture
 
 ### File Structure
