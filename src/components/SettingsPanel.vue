@@ -1,11 +1,13 @@
 <template>
-  <div class="settings-panel" :class="{ show: show }" @click.stop>
+  <div class="settings-panel" @click.stop role="dialog" aria-modal="true" aria-label="设置面板">
     <!-- 背景图设置 -->
     <div class="settings-section">
       <div class="settings-subtitle">页面背景图</div>
       <div class="config-item">
         <input type="file" accept="image/*,.webm" @change="handleBackgroundImageSelect" ref="backgroundImageInput">
+        <div v-if="backgroundError" class="inline-error">{{ backgroundError }}</div>
       </div>
+      <div v-if="backgroundSaveError" class="inline-error">{{ backgroundSaveError }}</div>
       <div v-if="backgroundImage" class="config-item">
         <video v-if="isBackgroundVideo" class="background-preview" autoplay muted playsinline @timeupdate="handlePreviewVideoTimeUpdate" ref="previewVideoRef">
           <source :src="backgroundImage" type="video/webm">
@@ -21,6 +23,7 @@
         <button class="settings-action-btn" @click="$emit('export')" title="导出布局">导出</button>
       </div>
       <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
+      <div v-if="importError" class="inline-error" style="padding: 0 20px 8px">{{ importError }}</div>
     </div>
     <div class="settings-section">
       <div class="settings-subtitle">可用模块</div>
@@ -80,7 +83,7 @@
     </div>
 
     <!-- Module Config Panel -->
-    <div v-if="showConfigPanel" class="module-config-panel" @click.stop>
+    <div v-if="showConfigPanel" class="module-config-panel" @click.stop role="dialog" aria-modal="true" aria-label="模块设置">
       <div class="config-header">
         <span class="config-title">模块设置</span>
         <button class="config-close" @click="$emit('close-config')">&times;</button>
@@ -96,7 +99,7 @@
       </div>
     </div>
 
-    <button class="reset-layout-btn" @click="$emit('reset-layout')">重置布局</button>
+    <button class="reset-layout-btn" @click="confirmReset">重置布局</button>
   </div>
 </template>
 
@@ -134,7 +137,6 @@ interface TempConfig {
 }
 
 const props = defineProps<{
-  show: boolean
   showConfigPanel: boolean
   configModuleType: string
   tempConfig?: TempConfig
@@ -142,6 +144,8 @@ const props = defineProps<{
   leftModules?: string[]
   rightModules?: string[]
   backgroundImage?: string
+  importError?: string
+  backgroundSaveError?: string
 }>()
 
 // 将 props 转换为响应式
@@ -175,6 +179,7 @@ const handlePreviewVideoTimeUpdate = () => {
 }
 
 const availableModules = moduleList
+const backgroundError = ref('')
 const backgroundImageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -189,9 +194,10 @@ const handleBackgroundImageSelect = (event: Event) => {
   if (!file) return
 
   if (file.size > MAX_BACKGROUND_SIZE) {
-    alert('文件过大，请选择小于 4MB 的图片或视频')
+    backgroundError.value = '文件过大，请选择小于 4MB 的图片或视频'
     return
   }
+  backgroundError.value = ''
 
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -254,6 +260,12 @@ const handleConfigUpdate = (value: unknown) => {
 const handleConfigUpdateFull = (key: string, value: unknown) => {
   emit('update-config', key, value)
 }
+
+const confirmReset = () => {
+  if (confirm('确定重置布局？所有自定义布局将恢复默认。')) {
+    emit('reset-layout')
+  }
+}
 </script>
 
 <style scoped>
@@ -268,7 +280,7 @@ const handleConfigUpdateFull = (key: string, value: unknown) => {
 .clear-background-btn {
   margin-top: 8px;
   padding: 6px 12px;
-  background: #ff4d4f;
+  background: var(--color-danger);
   color: white;
   border: none;
   border-radius: 4px;
@@ -276,5 +288,13 @@ const handleConfigUpdateFull = (key: string, value: unknown) => {
 }
 .clear-background-btn:hover {
   background: #ff7875;
+}
+.inline-error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-top: 6px;
 }
 </style>

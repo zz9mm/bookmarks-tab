@@ -1,7 +1,7 @@
 <template>
   <div class="module-box quick-access-section">
     <div class="content-layer">
-      <div class="section-title">快速访问</div>
+      <h2 class="section-title">快速访问</h2>
     <div v-if="bookmarks && bookmarks.length > 0" class="quick-access-grid-container">
       <div class="quick-access-grid" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
         <a

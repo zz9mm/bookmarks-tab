@@ -2,7 +2,7 @@
   <div class="module-box">
     <div class="minimax-usage">
       <div class="minimax-header">
-        <span class="minimax-title">Minimax 用量查询</span>
+        <h2 class="minimax-title">Minimax 用量查询</h2>
         <button class="minimax-refresh" @click="fetchUsage" :disabled="loading || !apiKey">
           {{ loading ? '查询中...' : '刷新' }}
         </button>
@@ -202,7 +202,7 @@ defineExpose({ fetchUsage })
 .minimax-refresh {
   padding: 4px 12px;
   font-size: 12px;
-  background: #4f46e5;
+  background: var(--color-info);
   color: white;
   border: none;
   border-radius: 4px;
@@ -211,7 +211,7 @@ defineExpose({ fetchUsage })
 }
 
 .minimax-refresh:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--color-info-light);
 }
 
 .minimax-refresh:disabled {
@@ -286,7 +286,7 @@ defineExpose({ fetchUsage })
 
 .progress-bar-inner {
   height: 100%;
-  background: #4f46e5;
+  background: var(--color-info);
   border-radius: 2px;
   transition: width 0.3s;
 }

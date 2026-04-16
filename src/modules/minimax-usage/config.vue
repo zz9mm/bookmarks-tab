@@ -8,6 +8,7 @@
           {{ querying ? '查询中...' : '查询模型' }}
         </button>
       </div>
+      <div v-if="queryError" class="query-error">{{ queryError }}</div>
     </div>
 
     <div class="config-item checkbox-item">
@@ -50,6 +51,7 @@ const emit = defineEmits<{
 
 const availableModels = ref<string[]>(props.modelValue?.availableModels || [])
 const querying = ref(false)
+const queryError = ref('')
 
 // 当 API Key 变化时清空模型列表
 watch(() => props.modelValue?.apiKey, () => {
@@ -67,6 +69,7 @@ const queryModels = async () => {
   if (!props.modelValue?.apiKey) return
 
   querying.value = true
+  queryError.value = ''
 
   try {
     const response = await fetch('https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains', {
@@ -97,7 +100,7 @@ const queryModels = async () => {
     updateConfig('availableModels', models)
   } catch (err: unknown) {
     console.error('查询模型失败:', err)
-    alert(err instanceof Error ? err.message : '查询模型失败')
+    queryError.value = err instanceof Error ? err.message : '查询模型失败'
   } finally {
     querying.value = false
   }
@@ -142,7 +145,7 @@ const updateConfig = (key: keyof MinimaxConfig, value: string | boolean | string
 .query-models-btn {
   padding: 6px 12px;
   font-size: 12px;
-  background: #4f46e5;
+  background: var(--color-info);
   color: white;
   border: none;
   border-radius: 4px;
@@ -152,7 +155,7 @@ const updateConfig = (key: keyof MinimaxConfig, value: string | boolean | string
 }
 
 .query-models-btn:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--color-info-light);
 }
 
 .query-models-btn:disabled {
@@ -173,7 +176,7 @@ const updateConfig = (key: keyof MinimaxConfig, value: string | boolean | string
 .config-item input[type="password"]:focus,
 .config-item select:focus {
   outline: none;
-  border-color: #4f46e5;
+  border-color: var(--color-info);
 }
 
 .model-list-hint {
@@ -198,5 +201,14 @@ const updateConfig = (key: keyof MinimaxConfig, value: string | boolean | string
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+.query-error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-top: 4px;
 }
 </style>

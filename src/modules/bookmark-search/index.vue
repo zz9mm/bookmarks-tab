@@ -1,5 +1,5 @@
 <template>
-  <div class="module-box">
+  <div class="module-box" aria-label="书签搜索">
     <div class="search-wrapper">
       <div class="search-bar bookmark-search">
         <svg class="search-icon" viewBox="0 0 24 24">
@@ -14,15 +14,18 @@
           @input="handleSearch"
           @focus="handleSearch"
           @blur="handleBlur"
+          @keydown="handleKeydown"
         >
       </div>
       <div class="search-dropdown bookmark-dropdown" :class="{ show: showDropdown && searchResults.length > 0 }">
         <a
-          v-for="bookmark in searchResults"
+          v-for="(bookmark, index) in searchResults"
           :key="bookmark.id"
           class="search-result-item"
+          :class="{ active: activeIndex === index }"
           :href="bookmark.url"
           target="_blank"
+          @mousedown.prevent
         >
           <img :src="getFavicon(bookmark.url)" alt="">
           <span>{{ bookmark.title }}</span>
@@ -49,10 +52,12 @@ const props = defineProps<{
 const searchQuery = ref('')
 const searchResults = ref<Bookmark[]>([])
 const showDropdown = ref(false)
+const activeIndex = ref(-1)
 
 const handleSearch = () => {
   const query = searchQuery.value.toLowerCase()
   showDropdown.value = true
+  activeIndex.value = -1
 
   if (!query) {
     searchResults.value = []
@@ -65,8 +70,38 @@ const handleSearch = () => {
 }
 
 const handleBlur = () => {
-  setTimeout(() => {
-    showDropdown.value = false
-  }, 200)
+  showDropdown.value = false
+  activeIndex.value = -1
+}
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (!showDropdown.value || searchResults.value.length === 0) {
+    if (e.key === 'Escape') {
+      showDropdown.value = false
+    }
+    return
+  }
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      activeIndex.value = (activeIndex.value + 1) % searchResults.value.length
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      activeIndex.value = activeIndex.value <= 0 ? searchResults.value.length - 1 : activeIndex.value - 1
+      break
+    case 'Enter':
+      if (activeIndex.value >= 0 && activeIndex.value < searchResults.value.length) {
+        e.preventDefault()
+        window.open(searchResults.value[activeIndex.value].url, '_blank')
+        showDropdown.value = false
+      }
+      break
+    case 'Escape':
+      showDropdown.value = false
+      activeIndex.value = -1
+      break
+  }
 }
 </script>

@@ -15,15 +15,16 @@
     <div v-else-if="backgroundImage" class="page-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
 
     <!-- Settings Button -->
-    <button class="settings-btn" @click.stop="toggleSettings">
+    <button class="settings-btn" @click.stop="toggleSettings" aria-label="设置">
       <svg viewBox="0 0 24 24" width="22" height="22">
         <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
       </svg>
     </button>
 
     <!-- Settings Panel -->
+    <Transition name="settings-panel">
     <SettingsPanel
-      :show="showSettings"
+      v-if="showSettings"
       :show-config-panel="showConfigPanel"
       :config-module-type="configModuleType"
       :temp-config="tempConfig"
@@ -31,6 +32,8 @@
       :left-modules="leftModules"
       :right-modules="rightModules"
       :background-image="backgroundImage"
+      :import-error="importError"
+      :background-save-error="backgroundSaveError"
       @export="exportLayout"
       @file-import="handleFileImport"
       @add-module="addModule"
@@ -42,6 +45,7 @@
       @update-background-image="updateBackgroundImage"
       @reset-layout="resetLayout"
     />
+    </Transition>
 
     <!-- Main Layout -->
     <div class="main-layout" :class="{ 'has-background': backgroundImage }" @click="closeSettings">
@@ -127,6 +131,8 @@ export default {
     const rightModules = ref([])
     const moduleConfigs = reactive({})
     const backgroundImage = ref('')
+    const importError = ref('')
+    const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
 
     // 判断是否是视频文件
@@ -192,8 +198,9 @@ export default {
             saveModuleConfigs()
           }
           saveLayoutSettings()
+          importError.value = ''
         } catch (err) {
-          alert('导入失败：无效的 JSON 文件')
+          importError.value = '导入失败：无效的 JSON 文件'
         }
       }
       reader.readAsText(file)
@@ -245,7 +252,8 @@ export default {
       return {
         folderId: config.folderId || '',
         folderName: config.folderName || '',
-        cols: config.cols || 6
+        cols: config.cols || 6,
+        hasBackground: !!backgroundImage.value
       }
     }
 
@@ -381,7 +389,7 @@ export default {
         }
       } catch (e) {
         console.error('背景图保存失败，文件可能过大:', e)
-        alert('背景图保存失败，文件可能过大')
+        backgroundSaveError.value = '背景图保存失败，文件可能过大'
         backgroundImage.value = ''
       }
     }
@@ -479,6 +487,8 @@ export default {
       leftModules,
       rightModules,
       backgroundImage,
+      importError,
+      backgroundSaveError,
       isVideo,
       bgVideoRef,
       handleVideoTimeUpdate,

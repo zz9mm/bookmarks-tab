@@ -1,5 +1,5 @@
 <template>
-  <div class="module-box desktop-icons-section">
+  <div class="module-box desktop-icons-section" :class="{ 'no-background': !hasBackground }">
     <div class="content-layer">
       <div class="section-title">{{ folderName || '桌面图标' }}</div>
       <div v-if="bookmarks.length > 0" class="desktop-icons-grid" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
@@ -49,6 +49,7 @@ const props = defineProps<{
   folderId?: string
   folderName?: string
   cols?: number
+  hasBackground?: boolean
 }>()
 
 const iconLoaded = ref<Record<string, boolean>>({})
@@ -173,5 +174,22 @@ const getColor = (url: string) => {
   color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
   padding: 16px 0;
+}
+
+/* 无背景时使用深色文字 */
+.no-background .section-title {
+  color: #333;
+}
+
+.no-background .icon-label {
+  color: #333;
+}
+
+.no-background .desktop-icon-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.no-background .empty-hint {
+  color: #999;
 }
 </style>

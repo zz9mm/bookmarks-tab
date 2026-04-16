@@ -177,8 +177,8 @@ const FolderNode = defineComponent({
 }
 
 .folder-select-btn:hover {
-  border-color: #4096ff;
-  box-shadow: 0 0 0 2px rgba(64,150,255,0.1);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1);
 }
 
 .folder-modal-overlay {
@@ -286,11 +286,11 @@ const FolderNode = defineComponent({
 
 .folder-node-row.selected {
   background: #e6f4ff;
-  color: #1677ff;
+  color: var(--color-primary);
 }
 
 .folder-node-row.selected .folder-arrow {
-  color: #1677ff;
+  color: var(--color-primary);
 }
 
 .folder-arrow {
