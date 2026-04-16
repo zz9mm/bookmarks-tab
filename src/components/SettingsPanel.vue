@@ -7,7 +7,7 @@
         <input type="file" accept="image/*,.webm" @change="handleBackgroundImageSelect" ref="backgroundImageInput">
       </div>
       <div v-if="backgroundImage" class="config-item">
-        <video v-if="isBackgroundVideo" class="background-preview" autoplay loop muted playsinline>
+        <video v-if="isBackgroundVideo" class="background-preview" autoplay muted playsinline @timeupdate="handlePreviewVideoTimeUpdate" ref="previewVideoRef">
           <source :src="backgroundImage" type="video/webm">
         </video>
         <div v-else class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
@@ -17,7 +17,7 @@
     <div class="settings-header">
       <div class="settings-title">布局设置</div>
       <div class="settings-actions">
-        <button class="settings-action-btn" @click="$emit('import')" title="导入布局">导入</button>
+        <button class="settings-action-btn" @click="triggerImport" title="导入布局">导入</button>
         <button class="settings-action-btn" @click="$emit('export')" title="导出布局">导出</button>
       </div>
       <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
@@ -109,12 +109,14 @@ const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
 const MinimaxUsageConfig = defineAsyncComponent(() => import('../modules/minimax-usage/config.vue'))
+const DesktopIconsConfig = defineAsyncComponent(() => import('../modules/desktop-icons/config.vue'))
 
 const configComponents: Record<string, any> = {
   'web-search': WebSearchConfig,
   'quick-access': QuickAccessConfig,
   'title': TitleConfig,
-  'minimax-usage': MinimaxUsageConfig
+  'minimax-usage': MinimaxUsageConfig,
+  'desktop-icons': DesktopIconsConfig
 }
 
 interface TempConfig {
@@ -149,14 +151,7 @@ const isBackgroundVideo = computed(() => {
   return backgroundImage.value?.startsWith('data:video/')
 })
 
-// 计算背景图样式
-const backgroundImageStyle = computed(() => {
-  if (!backgroundImage.value) return ''
-  return 'background-image: url(' + backgroundImage.value + ')'
-})
-
 const emit = defineEmits<{
-  (e: 'import'): void
   (e: 'export'): void
   (e: 'file-import', event: Event): void
   (e: 'add-module', type: string, side: 'top' | 'left' | 'right'): void
@@ -169,12 +164,34 @@ const emit = defineEmits<{
   (e: 'reset-layout'): void
 }>()
 
+const previewVideoRef = ref<HTMLVideoElement | null>(null)
+
+const handlePreviewVideoTimeUpdate = () => {
+  const video = previewVideoRef.value
+  if (!video || !video.duration) return
+  if (video.duration - video.currentTime < 0.3) {
+    video.currentTime = 0
+  }
+}
+
 const availableModules = moduleList
 const backgroundImageInput = ref<HTMLInputElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const triggerImport = () => {
+  fileInput.value?.click()
+}
+
+const MAX_BACKGROUND_SIZE = 4 * 1024 * 1024 // 4MB，localStorage 限制约 5MB
 
 const handleBackgroundImageSelect = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
+
+  if (file.size > MAX_BACKGROUND_SIZE) {
+    alert('文件过大，请选择小于 4MB 的图片或视频')
+    return
+  }
 
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -223,7 +240,7 @@ const handleFileImport = (event: Event) => {
 }
 
 const handleConfigUpdate = (value: unknown) => {
-  if (props.configModuleType === 'minimax-usage' || props.configModuleType === 'quick-access') {
+  if (props.configModuleType === 'minimax-usage' || props.configModuleType === 'quick-access' || props.configModuleType === 'desktop-icons') {
     // minimax-usage 和 quick-access 传递整个配置对象
     emit('update-config', props.configModuleType, value)
   } else {

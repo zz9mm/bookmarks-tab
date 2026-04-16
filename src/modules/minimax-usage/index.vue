@@ -24,9 +24,9 @@
               </div>
               <div class="stat-progress">
                 <div class="progress-bar">
-                  <div class="progress-bar-inner" :style="{ width: ((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) + '%' }"></div>
+                  <div class="progress-bar-inner" :style="{ width: (model.current_interval_total_count ? (model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100 : 0) + '%' }"></div>
                 </div>
-                <span class="progress-percent">{{ Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) }}%</span>
+                <span class="progress-percent">{{ model.current_interval_total_count ? Math.round((model.current_interval_total_count - model.current_interval_usage_count) / model.current_interval_total_count * 100) : 0 }}%</span>
               </div>
               <div class="stat-item">
                 <span class="stat-value">{{ formatTimeRange(model.start_time, model.end_time) }}</span>

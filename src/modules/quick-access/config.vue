@@ -15,7 +15,6 @@
 <script setup lang="ts">
 interface QuickAccessConfig {
   cols?: number
-  backgroundImage?: string
 }
 
 const props = defineProps<{
@@ -31,13 +30,3 @@ const updateConfig = (key: keyof QuickAccessConfig, value: any) => {
 }
 </script>
 
-<style scoped>
-.background-preview {
-  width: 100%;
-  height: 120px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 8px;
-  margin-top: 8px;
-}
-</style>

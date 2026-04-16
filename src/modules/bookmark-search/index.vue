@@ -60,7 +60,7 @@ const handleSearch = () => {
   }
 
   searchResults.value = (props.bookmarks || [])
-    .filter(b => b.title.toLowerCase().includes(query))
+    .filter(b => b.title.toLowerCase().includes(query) || b.url.toLowerCase().includes(query))
     .slice(0, 8)
 }
 

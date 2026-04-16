@@ -31,7 +31,6 @@
       :left-modules="leftModules"
       :right-modules="rightModules"
       :background-image="backgroundImage"
-      @import="importLayout"
       @export="exportLayout"
       @file-import="handleFileImport"
       @add-module="addModule"
@@ -55,6 +54,7 @@
           <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" />
           <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('top', index)" />
           <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('top', index)" />
+          <DesktopIcons v-else-if="module === 'desktop-icons'" v-bind="getModuleDesktopIconsConfig('top', index)" />
         </template>
       </div>
 
@@ -68,6 +68,7 @@
             <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('left', index)" />
             <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('left', index)" />
+            <DesktopIcons v-else-if="module === 'desktop-icons'" v-bind="getModuleDesktopIconsConfig('left', index)" />
           </template>
         </div>
 
@@ -80,6 +81,7 @@
             <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" />
             <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('right', index)" />
             <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('right', index)" />
+            <DesktopIcons v-else-if="module === 'desktop-icons'" v-bind="getModuleDesktopIconsConfig('right', index)" />
           </template>
         </div>
       </div>
@@ -95,6 +97,7 @@ import WebSearch from './modules/web-search/index.vue'
 import QuickAccess from './modules/quick-access/index.vue'
 import Title from './modules/title/index.vue'
 import MinimaxUsage from './modules/minimax-usage/index.vue'
+import DesktopIcons from './modules/desktop-icons/index.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import { moduleList, defaultModuleConfigs } from './modules/types'
 
@@ -107,6 +110,7 @@ export default {
     QuickAccess,
     Title,
     MinimaxUsage,
+    DesktopIcons,
     SettingsPanel
   },
   setup() {
@@ -117,7 +121,6 @@ export default {
     const configIndex = ref(0)
     const configModuleType = ref('')
     const tempConfig = reactive({})
-    const fileInput = ref(null)
 
     const topModules = ref([])
     const leftModules = ref([])
@@ -143,14 +146,6 @@ export default {
     const allBookmarks = ref([])
     const directBookmarks = ref([])
     const subfolders = ref([])
-
-    const currentEngine = ref('bing')
-
-    const searchEngines = {
-      bing: { url: 'https://www.bing.com/search?q=', name: 'Bing' },
-      baidu: { url: 'https://www.baidu.com/s?wd=', name: '百度' },
-      google: { url: 'https://www.google.com/search?q=', name: 'Google' }
-    }
 
     // Methods
     const toggleSettings = () => {
@@ -180,10 +175,6 @@ export default {
       URL.revokeObjectURL(url)
     }
 
-    const importLayout = () => {
-      fileInput.value.click()
-    }
-
     const handleFileImport = (event) => {
       const file = event.target.files[0]
       if (!file) return
@@ -207,16 +198,6 @@ export default {
       }
       reader.readAsText(file)
       event.target.value = ''
-    }
-
-    const getModuleName = (type) => {
-      const module = moduleList.find(m => m.type === type)
-      return module?.name || type
-    }
-
-    const hasConfig = (type) => {
-      const module = moduleList.find(m => m.type === type)
-      return module?.hasConfig || false
     }
 
     const getModuleConfigKey = (side, index) => `${side}-${index}`
@@ -256,6 +237,15 @@ export default {
         apiKey: config.apiKey || '',
         defaultModel: config.defaultModel || '',
         showAllModels: config.showAllModels || false
+      }
+    }
+
+    const getModuleDesktopIconsConfig = (side, index) => {
+      const config = getModuleConfig(side, index, 'desktop-icons')
+      return {
+        folderId: config.folderId || '',
+        folderName: config.folderName || '',
+        cols: config.cols || 6
       }
     }
 
@@ -310,7 +300,7 @@ export default {
     const updateConfig = (key, value) => {
       const configKey = getModuleConfigKey(configSide.value, configIndex.value)
 
-      if (configModuleType.value === 'minimax-usage' || configModuleType.value === 'quick-access') {
+      if (configModuleType.value === 'minimax-usage' || configModuleType.value === 'quick-access' || configModuleType.value === 'desktop-icons') {
         // minimax-usage 和 quick-access 模块直接保存整个配置对象
         moduleConfigs[configKey] = { ...value }
         Object.assign(tempConfig, value)
@@ -319,7 +309,6 @@ export default {
         moduleConfigs[configKey] = { ...tempConfig }
 
         if (configModuleType.value === 'web-search' && key === 'engine') {
-          currentEngine.value = value
           localStorage.setItem('searchEngine', value)
         }
       }
@@ -335,7 +324,6 @@ export default {
     }
 
     const updateEngine = (engine) => {
-      currentEngine.value = engine
       localStorage.setItem('searchEngine', engine)
     }
 
@@ -357,10 +345,17 @@ export default {
     const loadLayoutSettings = () => {
       const saved = localStorage.getItem('layoutSettings')
       if (saved) {
-        const settings = JSON.parse(saved)
-        topModules.value = settings.top || []
-        leftModules.value = settings.left || []
-        rightModules.value = settings.right || []
+        try {
+          const settings = JSON.parse(saved)
+          topModules.value = settings.top || []
+          leftModules.value = settings.left || []
+          rightModules.value = settings.right || []
+        } catch (e) {
+          console.error('布局设置解析失败:', e)
+          topModules.value = []
+          leftModules.value = ['bookmark-search', 'folder']
+          rightModules.value = ['web-search', 'quick-access']
+        }
         backgroundImage.value = localStorage.getItem('backgroundImage') || ''
       } else {
         topModules.value = []
@@ -386,14 +381,20 @@ export default {
         }
       } catch (e) {
         console.error('背景图保存失败，文件可能过大:', e)
+        alert('背景图保存失败，文件可能过大')
+        backgroundImage.value = ''
       }
     }
 
     const loadModuleConfigs = () => {
       const saved = localStorage.getItem('moduleConfigs')
       if (saved) {
-        const configs = JSON.parse(saved)
-        Object.assign(moduleConfigs, configs)
+        try {
+          const configs = JSON.parse(saved)
+          Object.assign(moduleConfigs, configs)
+        } catch (e) {
+          console.error('模块配置解析失败:', e)
+        }
       }
     }
 
@@ -401,15 +402,9 @@ export default {
       localStorage.setItem('moduleConfigs', JSON.stringify(moduleConfigs))
     }
 
-    const loadSearchEnginePreference = () => {
-      const saved = localStorage.getItem('searchEngine')
-      if (saved && searchEngines[saved]) {
-        currentEngine.value = saved
-      }
-    }
-
     // Bookmarks
     const loadBookmarks = () => {
+      if (typeof chrome === 'undefined' || !chrome.bookmarks) return
       chrome.bookmarks.getTree((bookmarkTreeNodes) => {
         const bookmarksBar = findBookmarksBar(bookmarkTreeNodes)
         if (bookmarksBar && bookmarksBar.children) {
@@ -470,7 +465,6 @@ export default {
         document.body.classList.add('has-page-background')
       }
       loadModuleConfigs()
-      loadSearchEnginePreference()
       loadBookmarks()
     })
 
@@ -481,7 +475,6 @@ export default {
       configIndex,
       configModuleType,
       tempConfig,
-      fileInput,
       topModules,
       leftModules,
       rightModules,
@@ -492,19 +485,16 @@ export default {
       allBookmarks,
       directBookmarks,
       subfolders,
-      currentEngine,
       availableModules: moduleList,
       toggleSettings,
       closeSettings,
       exportLayout,
-      importLayout,
       handleFileImport,
-      getModuleName,
-      hasConfig,
       getModuleCols,
       getModuleEngine,
       getModuleTitleConfig,
       getModuleMinimaxConfig,
+      getModuleDesktopIconsConfig,
       addModule,
       removeModule,
       moveModule,
