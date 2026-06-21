@@ -288,10 +288,9 @@ export default {
     }
 
     const resetLayout = () => {
-      const layout = defaultLayout()
-      topModules.value = layout.top
-      leftModules.value = layout.left
-      rightModules.value = layout.right
+      topModules.value = []
+      leftModules.value = []
+      rightModules.value = []
       saveLayoutSettings()
     }
 
