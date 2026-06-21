@@ -27,7 +27,9 @@
           target="_blank"
           @mousedown.prevent
         >
-          <img :src="getFavicon(bookmark.url)" alt="">
+          <FaviconImg :url="bookmark.url">
+            <span class="search-result-fallback">{{ bookmark.title.charAt(0) }}</span>
+          </FaviconImg>
           <span>{{ bookmark.title }}</span>
         </a>
       </div>
@@ -37,7 +39,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { getFavicon } from '../../composables/useFavicon'
+import FaviconImg from '../../components/FaviconImg.vue'
 
 interface Bookmark {
   id: string

@@ -7,14 +7,19 @@ export const getDomain = (url: string): string => {
   }
 }
 
-export const getFavicon = (url: string, size = 32): string => {
+export const getFavicon = (url: string, _size = 32): string => {
   const domain = getDomain(url)
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`
+  return `https://icon.horse/icon/${domain}`
+}
+
+export const getFaviconFallback = (url: string): string => {
+  const domain = getDomain(url)
+  return domain ? `https://${domain}/favicon.ico` : ''
 }
 
 export const getEngineIcon = (engine: string): string => {
   const domain = engine === 'baidu' ? 'baidu.com' : `${engine}.com`
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+  return `https://icon.horse/icon/${domain}`
 }
 
 export const searchEngines = {

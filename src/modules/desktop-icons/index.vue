@@ -12,21 +12,11 @@
           :title="bookmark.title"
         >
           <div class="icon-wrapper">
-            <img
-              v-show="iconLoaded[bookmark.id]"
-              class="desktop-icon-img"
-              :src="getIcon(bookmark.url)"
-              @load="iconLoaded[bookmark.id] = true"
-              @error="iconLoaded[bookmark.id] = false"
-              alt=""
-            >
-            <div
-              v-show="!iconLoaded[bookmark.id]"
-              class="fallback-icon"
-              :style="{ backgroundColor: getColor(bookmark.url) }"
-            >
-              {{ bookmark.title?.charAt(0) }}
-            </div>
+            <FaviconImg :url="bookmark.url" :size="64">
+              <div class="fallback-icon" :style="{ backgroundColor: getColor(bookmark.url) }">
+                {{ bookmark.title?.charAt(0) }}
+              </div>
+            </FaviconImg>
           </div>
           <span class="icon-label">{{ bookmark.title }}</span>
         </a>
@@ -38,6 +28,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import FaviconImg from '../../components/FaviconImg.vue'
 import type { ModuleConfig } from '../types'
 
 interface Bookmark {
@@ -58,7 +49,6 @@ const folderId = computed(() => (props.config?.folderId as string) || '')
 const folderName = ref((props.config?.folderName as string) || '')
 const cols = computed(() => (props.config?.cols as number) || 6)
 
-const iconLoaded = ref<Record<string, boolean>>({})
 const bookmarks = ref<Bookmark[]>([])
 
 const loadFolder = () => {
@@ -76,22 +66,11 @@ const loadFolder = () => {
   })
   chrome.bookmarks.getChildren(folderId.value, (children) => {
     bookmarks.value = (children || []).filter(c => !!c.url) as Bookmark[]
-    iconLoaded.value = {}
   })
 }
 
 watch(folderId, loadFolder, { immediate: true })
 
-const getIcon = (url: string) => {
-  try {
-    const domain = new URL(url).hostname
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-  } catch {
-    return ''
-  }
-}
-
-const colors = ['#4A90E2','#E24A4A','#E2904A','#4AE290','#904AE2','#E24A90','#4AE2E2']
 const getColor = (url: string) => {
   try {
     const domain = new URL(url).hostname
@@ -99,9 +78,9 @@ const getColor = (url: string) => {
     for (let i = 0; i < domain.length; i++) {
       hash = domain.charCodeAt(i) + ((hash << 5) - hash)
     }
-    return colors[Math.abs(hash) % colors.length]
+    return ['#4A90E2','#E24A4A','#E2904A','#4AE290','#904AE2','#E24A90','#4AE2E2'][Math.abs(hash) % 7]
   } catch {
-    return colors[0]
+    return '#4A90E2'
   }
 }
 </script>
@@ -154,7 +133,7 @@ const getColor = (url: string) => {
   justify-content: center;
 }
 
-.desktop-icon-img {
+.icon-wrapper :deep(img) {
   width: 100%;
   height: 100%;
   object-fit: contain;

@@ -2,34 +2,27 @@
   <div class="module-box quick-access-section">
     <div class="content-layer">
       <h2 class="section-title">快速访问</h2>
-    <div v-if="bookmarks && bookmarks.length > 0" class="quick-access-grid-container">
-      <div class="quick-access-grid" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
+    <div v-if="displayedBookmarks.length > 0" class="quick-access-grid-container">
+      <div class="quick-access-grid" :style="gridStyle">
         <a
-          v-for="bookmark in bookmarks"
+          v-for="bookmark in displayedBookmarks"
           :key="bookmark.id"
           class="quick-access-item"
           :href="bookmark.url"
           target="_blank"
         >
           <div class="icon-wrapper">
-            <img
-              v-show="iconLoaded[bookmark.id]"
-              class="quick-access-icon"
-              :src="getIcon(bookmark.url)"
-              @load="iconLoaded[bookmark.id] = true"
-              @error="iconLoaded[bookmark.id] = false"
-              alt=""
-            >
-            <div
-              v-show="!iconLoaded[bookmark.id]"
-              class="fallback-icon"
-              :style="{ backgroundColor: getColor(bookmark.url) }"
-            >
-              {{ getInitial(bookmark.url) }}
-            </div>
+            <FaviconImg :url="bookmark.url">
+              <div class="fallback-icon" :style="{ backgroundColor: getColor(bookmark.url) }">
+                {{ getInitial(bookmark.url) }}
+              </div>
+            </FaviconImg>
           </div>
           <span class="quick-access-title" :title="bookmark.title">{{ bookmark.title }}</span>
         </a>
+      </div>
+      <div v-if="hiddenCount > 0" class="quick-access-overflow">
+        还有 {{ hiddenCount }} 个书签未显示
       </div>
     </div>
     <div v-else class="empty-state">暂无书签</div>
@@ -38,8 +31,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
-import { getFavicon, getDomain } from '../../composables/useFavicon'
+import { computed } from 'vue'
+import { getDomain } from '../../composables/useFavicon'
+import FaviconImg from '../../components/FaviconImg.vue'
 import type { ModuleConfig } from '../types'
 
 interface Bookmark {
@@ -58,20 +52,22 @@ defineEmits<{
 }>()
 
 const cols = computed(() => (props.config?.cols as number) || 4)
+const rows = computed(() => (props.config?.rows as number) || 3)
 
-const iconLoaded = reactive<Record<string, boolean>>({})
+const displayedBookmarks = computed(() => {
+  const all = props.bookmarks || []
+  return all.slice(0, cols.value * rows.value)
+})
 
-watch(() => props.bookmarks, (newBookmarks) => {
-  if (newBookmarks) {
-    newBookmarks.forEach(bm => {
-      if (!(bm.id in iconLoaded)) {
-        iconLoaded[bm.id] = false
-      }
-    })
-  }
-}, { immediate: true })
+const hiddenCount = computed(() => {
+  const all = props.bookmarks || []
+  return Math.max(0, all.length - cols.value * rows.value)
+})
 
-const getIcon = (url: string) => getFavicon(url, 64)
+const gridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`,
+  gridTemplateRows: `repeat(${rows.value}, auto)`
+}))
 
 const getInitial = (url: string): string => {
   const domain = getDomain(url)
@@ -95,3 +91,12 @@ const getColor = (url: string): string => {
   return colors[Math.abs(hash) % colors.length]
 }
 </script>
+
+<style scoped>
+.quick-access-overflow {
+  padding: 8px 18px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+</style>

@@ -9,7 +9,9 @@
     <div class="folder-children" role="group">
       <template v-for="child in folder.children" :key="child.id">
         <a v-if="child.url" class="bookmark-item" :href="child.url" target="_blank">
-          <img class="bookmark-icon" :src="getFavicon(child.url)" alt="">
+          <FaviconImg :url="child.url">
+            <span class="bookmark-fallback">{{ child.title.charAt(0) }}</span>
+          </FaviconImg>
           <span class="bookmark-title">{{ child.title }}</span>
         </a>
         <FolderItem v-else-if="child.children" :folder="child" :collapsedFolders="collapsedFolders" @toggle="$emit('toggle', $event)" />
@@ -19,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { getFavicon } from '../../composables/useFavicon'
+import FaviconImg from '../../components/FaviconImg.vue'
 
 interface FolderNode {
   id: string

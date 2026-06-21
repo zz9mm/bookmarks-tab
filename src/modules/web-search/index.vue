@@ -4,13 +4,21 @@
       <div class="search-bar web-search">
         <div class="engine-dropdown" ref="dropdownRef">
           <button class="engine-selected" @click.stop="toggleEngineMenu" @keydown="handleEngineKeydown">
-            <img :src="getEngineIcon(currentEngine)" alt="" class="engine-icon">
+            <span class="engine-icon">
+              <FaviconImg :url="`https://${currentEngine === 'baidu' ? 'baidu.com' : currentEngine + '.com'}`">
+                <span class="engine-icon-fallback">{{ currentEngine.charAt(0).toUpperCase() }}</span>
+              </FaviconImg>
+            </span>
             <span class="engine-name">{{ getEngineName(currentEngine) }}</span>
             <span class="engine-arrow">▼</span>
           </button>
           <div class="engine-menu" :class="{ show: showEngineMenu }">
             <div v-for="(engine, key) in searchEngines" :key="key" class="engine-option" :class="{ active: engineActiveIndex === engineKeys.indexOf(key) }" @click="selectEngine(key)">
-              <img :src="getEngineIcon(key)" alt="" class="engine-icon">
+              <span class="engine-icon">
+                <FaviconImg :url="`https://${key === 'baidu' ? 'baidu.com' : key + '.com'}`">
+                  <span class="engine-icon-fallback">{{ key.charAt(0).toUpperCase() }}</span>
+                </FaviconImg>
+              </span>
               <span>{{ engine.name }}</span>
             </div>
           </div>
@@ -31,7 +39,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { searchEngines, getEngineIcon } from '../../composables/useFavicon'
+import { searchEngines } from '../../composables/useFavicon'
+import FaviconImg from '../../components/FaviconImg.vue'
 import type { ModuleConfig } from '../types'
 
 type EngineKey = 'bing' | 'baidu' | 'google'
