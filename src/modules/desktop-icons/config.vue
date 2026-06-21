@@ -7,14 +7,11 @@
       </button>
     </div>
     <div class="config-item">
-      <label>每行图标数量</label>
-      <select :value="(config?.cols as number) || 6" @change="emit('update-config', { ...(config || {}), cols: parseInt(($event.target as HTMLSelectElement).value) })">
-        <option :value="4">4 个</option>
-        <option :value="5">5 个</option>
-        <option :value="6">6 个</option>
-        <option :value="8">8 个</option>
-        <option :value="10">10 个</option>
+      <label>布局（列 × 行）</label>
+      <select :value="layoutValue" @change="onLayoutChange(($event.target as HTMLSelectElement).value)">
+        <option v-for="opt in layouts" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
+      <div class="layout-hint">共显示 {{ cols * rows }} 个书签，多余部分会隐藏</div>
     </div>
 
     <teleport to="body">
@@ -40,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineComponent, h } from 'vue'
+import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import type { ModuleConfig } from '../types'
 
 interface BookmarkNode {
@@ -66,6 +63,29 @@ const emit = defineEmits<{
 
 const showModal = ref(false)
 const folderTree = ref<FolderTree[]>([])
+
+const layouts = [
+  { value: '3x3', cols: 3, rows: 3, label: '3 × 3（9 个）' },
+  { value: '4x3', cols: 4, rows: 3, label: '4 × 3（12 个）' },
+  { value: '5x2', cols: 5, rows: 2, label: '5 × 2（10 个）' },
+  { value: '6x2', cols: 6, rows: 2, label: '6 × 2（12 个）' },
+  { value: '2x4', cols: 2, rows: 4, label: '2 × 4（8 个）' },
+  { value: '1x5', cols: 1, rows: 5, label: '1 × 5（5 个）' }
+]
+
+const cols = computed(() => (props.config?.cols as number) || 6)
+const rows = computed(() => (props.config?.rows as number) || 2)
+
+const layoutValue = computed(() => {
+  const matched = layouts.find(l => l.cols === cols.value && l.rows === rows.value)
+  return matched?.value || '6x2'
+})
+
+const onLayoutChange = (value: string) => {
+  const opt = layouts.find(l => l.value === value)
+  if (!opt) return
+  emit('update-config', { ...(props.config || {}), cols: opt.cols, rows: opt.rows })
+}
 
 onMounted(() => {
   if (typeof chrome === 'undefined' || !chrome.bookmarks) return
@@ -150,6 +170,16 @@ const FolderNode = defineComponent({
   margin-bottom: 10px;
 }
 
+.config-item label {
+  margin-bottom: 0;
+  min-width: 100px;
+}
+
+.config-item:nth-child(2) {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .folder-select-btn {
   flex: 1;
   text-align: left;
@@ -169,6 +199,12 @@ const FolderNode = defineComponent({
 .folder-select-btn:hover {
   border-color: var(--color-primary-light);
   box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1);
+}
+
+.layout-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
 }
 
 .folder-modal-overlay {

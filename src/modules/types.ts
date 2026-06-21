@@ -25,7 +25,7 @@ export const defaultModuleConfigs: Record<ModuleType, ModuleConfig> = {
   'quick-access': { cols: 4, rows: 3 },
   'title': { text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 },
   'minimax-usage': { apiKey: '' },
-  'desktop-icons': { folderId: '', folderName: '', cols: 6 }
+  'desktop-icons': { folderId: '', folderName: '', cols: 6, rows: 2 }
 }
 
 export const moduleList: ModuleInfo[] = [

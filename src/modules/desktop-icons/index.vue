@@ -2,9 +2,9 @@
   <div class="module-box desktop-icons-section">
     <div class="content-layer">
       <div class="section-title">{{ folderName || '桌面图标' }}</div>
-      <div v-if="bookmarks.length > 0" class="desktop-icons-grid" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
+      <div v-if="displayedBookmarks.length > 0" class="desktop-icons-grid" :style="gridStyle">
         <a
-          v-for="bookmark in bookmarks"
+          v-for="bookmark in displayedBookmarks"
           :key="bookmark.id"
           class="desktop-icon-item"
           :href="bookmark.url"
@@ -21,7 +21,11 @@
           <span class="icon-label">{{ bookmark.title }}</span>
         </a>
       </div>
-      <div v-else class="empty-hint">请在设置中选择书签文件夹</div>
+      <div v-else-if="bookmarks.length === 0" class="empty-hint">请在设置中选择书签文件夹</div>
+      <div v-else class="empty-hint">布局为 0×0，无显示</div>
+      <div v-if="hiddenCount > 0" class="quick-access-overflow">
+        还有 {{ hiddenCount }} 个书签未显示
+      </div>
     </div>
   </div>
 </template>
@@ -48,8 +52,17 @@ defineEmits<{
 const folderId = computed(() => (props.config?.folderId as string) || '')
 const folderName = ref((props.config?.folderName as string) || '')
 const cols = computed(() => (props.config?.cols as number) || 6)
+const rows = computed(() => (props.config?.rows as number) || 2)
 
 const bookmarks = ref<Bookmark[]>([])
+
+const displayedBookmarks = computed(() => bookmarks.value.slice(0, cols.value * rows.value))
+const hiddenCount = computed(() => Math.max(0, bookmarks.value.length - cols.value * rows.value))
+
+const gridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`,
+  gridTemplateRows: `repeat(${rows.value}, auto)`
+}))
 
 const loadFolder = () => {
   if (!folderId.value) {
@@ -166,5 +179,12 @@ const getColor = (url: string) => {
   color: #999;
   font-size: 13px;
   padding: 16px 0;
+}
+
+.quick-access-overflow {
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 </style>
