@@ -1,7 +1,7 @@
 <template>
   <div class="config-item">
     <label>每行显示图标数量</label>
-    <select :value="modelValue?.cols" @change="updateConfig('cols', parseInt(($event.target as HTMLSelectElement).value))">
+    <select :value="(config?.cols as number) || 4" @change="emit('update-config', { ...(config || {}), cols: parseInt(($event.target as HTMLSelectElement).value) })">
       <option :value="3">3 个</option>
       <option :value="4">4 个</option>
       <option :value="5">5 个</option>
@@ -13,20 +13,13 @@
 </template>
 
 <script setup lang="ts">
-interface QuickAccessConfig {
-  cols?: number
-}
+import type { ModuleConfig } from '../types'
 
-const props = defineProps<{
-  modelValue?: QuickAccessConfig
+defineProps<{
+  config?: ModuleConfig
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: QuickAccessConfig): void
+  (e: 'update-config', config: ModuleConfig): void
 }>()
-
-const updateConfig = (key: keyof QuickAccessConfig, value: any) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
-}
 </script>
-

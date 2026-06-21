@@ -32,19 +32,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { searchEngines, getEngineIcon } from '../../composables/useFavicon'
+import type { ModuleConfig } from '../types'
 
 type EngineKey = 'bing' | 'baidu' | 'google'
 
 const props = defineProps<{
-  defaultEngine?: string
+  config?: ModuleConfig
 }>()
 
 const emit = defineEmits<{
-  (e: 'engineChange', engine: string): void
+  (e: 'update-config', config: ModuleConfig): void
 }>()
 
 const searchQuery = ref('')
-const currentEngine = ref<EngineKey>((props.defaultEngine as EngineKey) || 'bing')
+const currentEngine = ref<EngineKey>((props.config?.engine as EngineKey) || 'bing')
 const showEngineMenu = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const engineActiveIndex = ref(-1)
@@ -61,7 +62,7 @@ const selectEngine = (engine: EngineKey) => {
   currentEngine.value = engine
   showEngineMenu.value = false
   engineActiveIndex.value = -1
-  emit('engineChange', engine)
+  emit('update-config', { ...(props.config || {}), engine })
 }
 
 const handleEngineKeydown = (e: KeyboardEvent) => {

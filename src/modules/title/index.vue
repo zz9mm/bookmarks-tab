@@ -6,20 +6,23 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { ModuleConfig } from '../types'
 
 const props = defineProps<{
-  text?: string
-  fontSize?: number
-  align?: string
-  fontFamily?: string
-  textIndent?: number
+  config?: ModuleConfig
 }>()
 
+defineEmits<{
+  (e: 'update-config', config: ModuleConfig): void
+}>()
+
+const text = computed(() => (props.config?.text as string) ?? '文本')
+
 const titleStyle = computed(() => ({
-  fontSize: (props.fontSize || 24) + 'px',
-  textAlign: props.align as 'left' | 'center' | 'right' || 'center',
-  fontFamily: props.fontFamily || 'inherit',
-  textIndent: (props.textIndent || 0) + 'em'
+  fontSize: ((props.config?.fontSize as number) || 24) + 'px',
+  textAlign: (props.config?.align as 'left' | 'center' | 'right') || 'center',
+  fontFamily: (props.config?.fontFamily as string) || 'inherit',
+  textIndent: ((props.config?.textIndent as number) || 0) + 'em'
 }))
 </script>
 

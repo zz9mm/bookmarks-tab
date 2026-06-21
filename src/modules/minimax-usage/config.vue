@@ -3,8 +3,8 @@
     <div class="config-item">
       <label>API Key</label>
       <div class="api-key-row">
-        <input type="password" :value="modelValue?.apiKey" @input="updateConfig('apiKey', ($event.target as HTMLInputElement).value)" placeholder="输入 Minimax API Key">
-        <button class="query-models-btn" @click="queryModels" :disabled="!modelValue?.apiKey || querying">
+        <input type="password" :value="apiKey" @input="emit('update-config', { ...(config || {}), apiKey: ($event.target as HTMLInputElement).value })" placeholder="输入 Minimax API Key">
+        <button class="query-models-btn" @click="queryModels" :disabled="!apiKey || querying">
           {{ querying ? '查询中...' : '查询模型' }}
         </button>
       </div>
@@ -13,14 +13,14 @@
 
     <div class="config-item checkbox-item">
       <label>
-        <input type="checkbox" :checked="modelValue?.showAllModels" @change="updateConfig('showAllModels', ($event.target as HTMLInputElement).checked)">
+        <input type="checkbox" :checked="!!config?.showAllModels" @change="emit('update-config', { ...(config || {}), showAllModels: ($event.target as HTMLInputElement).checked })">
         显示所有模型
       </label>
     </div>
 
-    <div class="config-item" v-if="!modelValue?.showAllModels">
+    <div class="config-item" v-if="!config?.showAllModels">
       <label>默认显示模型</label>
-      <select :value="modelValue?.defaultModel || ''" @change="updateConfig('defaultModel', ($event.target as HTMLSelectElement).value)">
+      <select :value="(config?.defaultModel as string) || ''" @change="emit('update-config', { ...(config || {}), defaultModel: ($event.target as HTMLSelectElement).value })">
         <option value="">请先查询模型</option>
         <option v-for="model in availableModels" :key="model" :value="model">{{ model }}</option>
       </select>
@@ -32,41 +32,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-
-interface MinimaxConfig {
-  apiKey?: string
-  defaultModel?: string
-  showAllModels?: boolean
-  availableModels?: string[]
-}
+import { ref, computed } from 'vue'
+import type { ModuleConfig } from '../types'
 
 const props = defineProps<{
-  modelValue?: MinimaxConfig
+  config?: ModuleConfig
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: MinimaxConfig): void
+  (e: 'update-config', config: ModuleConfig): void
 }>()
 
-const availableModels = ref<string[]>(props.modelValue?.availableModels || [])
+const apiKey = computed(() => (props.config?.apiKey as string) || '')
+const availableModels = computed<string[]>(() => (props.config?.availableModels as string[]) || [])
+
 const querying = ref(false)
 const queryError = ref('')
 
-// 当 API Key 变化时清空模型列表
-watch(() => props.modelValue?.apiKey, () => {
-  availableModels.value = []
-})
-
-// 监听配置中模型列表的变化（从 localStorage 恢复时）
-watch(() => props.modelValue?.availableModels, (newModels) => {
-  if (newModels && newModels.length > 0) {
-    availableModels.value = newModels
-  }
-})
-
 const queryModels = async () => {
-  if (!props.modelValue?.apiKey) return
+  if (!apiKey.value) return
 
   querying.value = true
   queryError.value = ''
@@ -75,7 +59,7 @@ const queryModels = async () => {
     const response = await fetch('https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${props.modelValue.apiKey}`,
+        'Authorization': `Bearer ${apiKey.value}`,
         'Content-Type': 'application/json'
       }
     })
@@ -95,23 +79,13 @@ const queryModels = async () => {
       throw new Error(data.message || '获取模型列表失败')
     }
 
-    availableModels.value = models
-    // 保存模型列表到配置
-    updateConfig('availableModels', models)
+    emit('update-config', { ...(props.config || {}), availableModels: models })
   } catch (err: unknown) {
     console.error('查询模型失败:', err)
     queryError.value = err instanceof Error ? err.message : '查询模型失败'
   } finally {
     querying.value = false
   }
-}
-
-const updateConfig = (key: keyof MinimaxConfig, value: string | boolean | string[]) => {
-  const current = props.modelValue || {}
-  emit('update:modelValue', {
-    ...current,
-    [key]: value
-  })
 }
 </script>
 

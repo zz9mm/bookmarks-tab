@@ -43,6 +43,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import type { ModuleConfig } from '../types'
 
 interface ModelRemain {
   model_name: string
@@ -54,16 +55,22 @@ interface ModelRemain {
 }
 
 const props = defineProps<{
-  apiKey?: string
-  defaultModel?: string
-  showAllModels?: boolean
+  config?: ModuleConfig
 }>()
+
+defineEmits<{
+  (e: 'update-config', config: ModuleConfig): void
+}>()
+
+const apiKey = computed(() => (props.config?.apiKey as string) || '')
+const defaultModel = computed(() => (props.config?.defaultModel as string) || '')
+const showAllModels = computed(() => !!props.config?.showAllModels)
 
 const displayedModels = computed(() => {
   if (!modelRemains.value.length) return []
-  if (props.showAllModels) return modelRemains.value
-  if (props.defaultModel) {
-    return modelRemains.value.filter(m => m.model_name === props.defaultModel)
+  if (showAllModels.value) return modelRemains.value
+  if (defaultModel.value) {
+    return modelRemains.value.filter(m => m.model_name === defaultModel.value)
   }
   return [modelRemains.value[0]]
 })
@@ -77,7 +84,7 @@ let timer: ReturnType<typeof setInterval> | null = null
 const startPolling = () => {
   if (timer) clearInterval(timer)
   timer = setInterval(() => {
-    if (props.apiKey) {
+    if (apiKey.value) {
       fetchUsage()
     }
   }, 60000)
@@ -91,7 +98,7 @@ const stopPolling = () => {
 }
 
 onMounted(() => {
-  if (props.apiKey) {
+  if (apiKey.value) {
     fetchUsage()
     startPolling()
   }
@@ -101,7 +108,7 @@ onUnmounted(() => {
   stopPolling()
 })
 
-watch(() => props.apiKey, (newKey) => {
+watch(apiKey, (newKey) => {
   if (newKey) {
     fetchUsage()
     startPolling()
@@ -111,15 +118,14 @@ watch(() => props.apiKey, (newKey) => {
   }
 })
 
-// 监听配置变化，当显示设置改变时自动刷新数据
-watch(() => [props.showAllModels, props.defaultModel], () => {
-  if (props.apiKey && !modelRemains.value.length) {
+watch([defaultModel, showAllModels], () => {
+  if (apiKey.value && !modelRemains.value.length) {
     fetchUsage()
   }
 })
 
 const fetchUsage = async () => {
-  if (!props.apiKey) return
+  if (!apiKey.value) return
 
   loading.value = true
   error.value = ''
@@ -128,7 +134,7 @@ const fetchUsage = async () => {
     const response = await fetch('https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${props.apiKey}`,
+        'Authorization': `Bearer ${apiKey.value}`,
         'Content-Type': 'application/json'
       }
     })
@@ -157,19 +163,19 @@ const fetchUsage = async () => {
 const formatTime = (timestamp: number) => {
   if (!timestamp) return '-'
   const date = new Date(timestamp)
-  const hours = String(date.getUTCHours()).padStart(2, '0')
-  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
-  return `${hours}:${minutes}(UTC+8)`
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 
 const formatTimeRange = (start: number, end: number) => {
   if (!start || !end) return '-'
-  return `${formatTime(start)}-${formatTime(end).replace('(UTC+8)', '')}`
+  return `${formatTime(start)} - ${formatTime(end)}`
 }
 
 const formatRemainsTime = (seconds: number) => {
   if (!seconds) return '-'
-  const ms = Math.floor(seconds / 1000) // 转换为秒
+  const ms = Math.floor(seconds / 1000)
   const hours = Math.floor(ms / 3600)
   const minutes = Math.floor((ms % 3600) / 60)
   if (hours > 0) {

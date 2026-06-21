@@ -27,13 +27,14 @@
       v-if="showSettings"
       :show-config-panel="showConfigPanel"
       :config-module-type="configModuleType"
-      :temp-config="tempConfig"
       :top-modules="topModules"
       :left-modules="leftModules"
       :right-modules="rightModules"
       :background-image="backgroundImage"
       :import-error="importError"
       :background-save-error="backgroundSaveError"
+      :editing-config="editingConfig"
+      :editing-id="editingId"
       @export="exportLayout"
       @file-import="handleFileImport"
       @add-module="addModule"
@@ -51,42 +52,45 @@
     <div class="main-layout" :class="{ 'has-background': backgroundImage }" @click="closeSettings">
       <!-- Top Panel -->
       <div class="top-panel">
-        <template v-for="(module, index) in topModules" :key="'top-' + index">
-          <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
-          <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
-          <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('top', index)" @engineChange="updateEngine" />
-          <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('top', index)" />
-          <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('top', index)" />
-          <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('top', index)" />
-          <DesktopIcons v-else-if="module === 'desktop-icons'" v-bind="getModuleDesktopIconsConfig('top', index)" />
-        </template>
+        <ModuleRenderer
+          v-for="m in topModules"
+          :key="m.id"
+          :module="m"
+          :config="getModuleConfig(m)"
+          :bookmarks="allBookmarks"
+          :direct-bookmarks="directBookmarks"
+          :subfolders="subfolders"
+          @update-config="(cfg) => updateConfig(m.id, cfg)"
+        />
       </div>
 
       <div class="bottom-panels">
         <!-- Left Panel -->
         <div class="left-panel">
-          <template v-for="(module, index) in leftModules" :key="'left-' + index">
-            <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
-            <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
-            <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('left', index)" @engineChange="updateEngine" />
-            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('left', index)" />
-            <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('left', index)" />
-            <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('left', index)" />
-            <DesktopIcons v-else-if="module === 'desktop-icons'" v-bind="getModuleDesktopIconsConfig('left', index)" />
-          </template>
+          <ModuleRenderer
+            v-for="m in leftModules"
+            :key="m.id"
+            :module="m"
+            :config="getModuleConfig(m)"
+            :bookmarks="allBookmarks"
+            :direct-bookmarks="directBookmarks"
+            :subfolders="subfolders"
+            @update-config="(cfg) => updateConfig(m.id, cfg)"
+          />
         </div>
 
         <!-- Right Panel -->
         <div class="right-panel">
-          <template v-for="(module, index) in rightModules" :key="'right-' + index">
-            <BookmarkSearch v-if="module === 'bookmark-search'" :bookmarks="allBookmarks" />
-            <FolderTree v-else-if="module === 'folder'" :folders="subfolders" />
-            <WebSearch v-else-if="module === 'web-search'" :defaultEngine="getModuleEngine('right', index)" @engineChange="updateEngine" />
-            <QuickAccess v-else-if="module === 'quick-access'" :bookmarks="directBookmarks" :cols="getModuleCols('right', index)" />
-            <Title v-else-if="module === 'title'" v-bind="getModuleTitleConfig('right', index)" />
-            <MinimaxUsage v-else-if="module === 'minimax-usage'" v-bind="getModuleMinimaxConfig('right', index)" />
-            <DesktopIcons v-else-if="module === 'desktop-icons'" v-bind="getModuleDesktopIconsConfig('right', index)" />
-          </template>
+          <ModuleRenderer
+            v-for="m in rightModules"
+            :key="m.id"
+            :module="m"
+            :config="getModuleConfig(m)"
+            :bookmarks="allBookmarks"
+            :direct-bookmarks="directBookmarks"
+            :subfolders="subfolders"
+            @update-config="(cfg) => updateConfig(m.id, cfg)"
+          />
         </div>
       </div>
     </div>
@@ -95,36 +99,43 @@
 
 <script>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import BookmarkSearch from './modules/bookmark-search/index.vue'
-import FolderTree from './modules/folder/index.vue'
-import WebSearch from './modules/web-search/index.vue'
-import QuickAccess from './modules/quick-access/index.vue'
-import Title from './modules/title/index.vue'
-import MinimaxUsage from './modules/minimax-usage/index.vue'
-import DesktopIcons from './modules/desktop-icons/index.vue'
+import ModuleRenderer from './components/ModuleRenderer.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
-import { moduleList, defaultModuleConfigs } from './modules/types'
+import { defaultModuleConfigs } from './modules/types'
+
+const makeId = () => (typeof crypto !== 'undefined' && crypto.randomUUID
+  ? crypto.randomUUID()
+  : 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10))
+
+const toInstances = (arr) => {
+  if (!Array.isArray(arr)) return null
+  return arr.filter(t => typeof t === 'string' && t in defaultModuleConfigs).map(t => ({ id: makeId(), type: t }))
+}
+
+const isInstanceArray = (arr) =>
+  Array.isArray(arr) && arr.every(x => x && typeof x === 'object' && typeof x.type === 'string' && typeof x.id === 'string' && x.type in defaultModuleConfigs)
+
+const defaultLayout = () => ({
+  top: [],
+  left: [
+    { id: makeId(), type: 'bookmark-search' },
+    { id: makeId(), type: 'folder' }
+  ],
+  right: [
+    { id: makeId(), type: 'web-search' },
+    { id: makeId(), type: 'quick-access' }
+  ]
+})
 
 export default {
   name: 'App',
-  components: {
-    BookmarkSearch,
-    FolderTree,
-    WebSearch,
-    QuickAccess,
-    Title,
-    MinimaxUsage,
-    DesktopIcons,
-    SettingsPanel
-  },
+  components: { ModuleRenderer, SettingsPanel },
   setup() {
-    // State
     const showSettings = ref(false)
     const showConfigPanel = ref(false)
-    const configSide = ref('')
-    const configIndex = ref(0)
     const configModuleType = ref('')
-    const tempConfig = reactive({})
+    const editingId = ref('')
+    const editingConfig = computed(() => editingId.value ? (moduleConfigs[editingId.value] || {}) : {})
 
     const topModules = ref([])
     const leftModules = ref([])
@@ -135,12 +146,10 @@ export default {
     const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
 
-    // 判断是否是视频文件
     const isVideo = computed(() => {
       return backgroundImage.value && backgroundImage.value.startsWith('data:video/')
     })
 
-    // 在视频快结束时（最后0.3s）手动 seek 到开头，避免 loop 属性的卡顿
     const handleVideoTimeUpdate = () => {
       const video = bgVideoRef.value
       if (!video || !video.duration) return
@@ -153,7 +162,6 @@ export default {
     const directBookmarks = ref([])
     const subfolders = ref([])
 
-    // Methods
     const toggleSettings = () => {
       showSettings.value = !showSettings.value
     }
@@ -189,9 +197,9 @@ export default {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result)
-          if (data.top) topModules.value = data.top
-          if (data.left) leftModules.value = data.left
-          if (data.right) rightModules.value = data.right
+          if (isInstanceArray(data.top)) topModules.value = data.top
+          if (isInstanceArray(data.left)) leftModules.value = data.left
+          if (isInstanceArray(data.right)) rightModules.value = data.right
           if (data.backgroundImage) backgroundImage.value = data.backgroundImage
           if (data.moduleConfigs) {
             Object.assign(moduleConfigs, data.moduleConfigs)
@@ -207,97 +215,66 @@ export default {
       event.target.value = ''
     }
 
-    const getModuleConfigKey = (side, index) => `${side}-${index}`
-
-    const getModuleConfig = (side, index, type) => {
-      const key = getModuleConfigKey(side, index)
-      if (!moduleConfigs[key]) {
-        moduleConfigs[key] = { ...defaultModuleConfigs[type] }
+    const getModuleConfig = (m) => {
+      if (!moduleConfigs[m.id]) {
+        moduleConfigs[m.id] = { ...defaultModuleConfigs[m.type] }
+        saveModuleConfigs()
       }
-      return moduleConfigs[key] || {}
-    }
-
-    const getModuleCols = (side, index) => {
-      const config = getModuleConfig(side, index, 'quick-access')
-      return config.cols || 4
-    }
-
-    const getModuleEngine = (side, index) => {
-      const config = getModuleConfig(side, index, 'web-search')
-      return config.engine || 'bing'
-    }
-
-    const getModuleTitleConfig = (side, index) => {
-      const config = getModuleConfig(side, index, 'title')
-      return {
-        text: config.text || '文本',
-        fontSize: config.fontSize || 24,
-        align: config.align || 'center',
-        fontFamily: config.fontFamily || 'inherit',
-        textIndent: config.textIndent || 0
-      }
-    }
-
-    const getModuleMinimaxConfig = (side, index) => {
-      const config = getModuleConfig(side, index, 'minimax-usage')
-      return {
-        apiKey: config.apiKey || '',
-        defaultModel: config.defaultModel || '',
-        showAllModels: config.showAllModels || false
-      }
-    }
-
-    const getModuleDesktopIconsConfig = (side, index) => {
-      const config = getModuleConfig(side, index, 'desktop-icons')
-      return {
-        folderId: config.folderId || '',
-        folderName: config.folderName || '',
-        cols: config.cols || 6,
-        hasBackground: !!backgroundImage.value
-      }
+      return moduleConfigs[m.id]
     }
 
     const addModule = (type, side) => {
+      const instance = { id: makeId(), type }
       if (side === 'top') {
-        topModules.value.push(type)
+        topModules.value.push(instance)
       } else if (side === 'left') {
-        leftModules.value.push(type)
+        leftModules.value.push(instance)
       } else {
-        rightModules.value.push(type)
+        rightModules.value.push(instance)
       }
       saveLayoutSettings()
     }
 
-    const removeModule = (side, index) => {
-      if (side === 'top') {
-        topModules.value.splice(index, 1)
-      } else if (side === 'left') {
-        leftModules.value.splice(index, 1)
-      } else {
-        rightModules.value.splice(index, 1)
+    const removeModule = (id) => {
+      const removeFrom = (arr) => {
+        const idx = arr.findIndex(m => m.id === id)
+        if (idx >= 0) arr.splice(idx, 1)
       }
+      removeFrom(topModules.value)
+      removeFrom(leftModules.value)
+      removeFrom(rightModules.value)
+      delete moduleConfigs[id]
+      saveLayoutSettings()
+      saveModuleConfigs()
+    }
+
+    const moveModule = (id, direction) => {
+      const find = (arr) => arr.findIndex(m => m.id === id)
+      const topIdx = find(topModules.value)
+      const leftIdx = find(leftModules.value)
+      const rightIdx = find(rightModules.value)
+
+      let arr, idx
+      if (topIdx >= 0) { arr = topModules.value; idx = topIdx }
+      else if (leftIdx >= 0) { arr = leftModules.value; idx = leftIdx }
+      else if (rightIdx >= 0) { arr = rightModules.value; idx = rightIdx }
+      else return
+
+      const newIndex = idx + direction
+      if (newIndex < 0 || newIndex >= arr.length) return
+      const temp = arr[idx]
+      arr[idx] = arr[newIndex]
+      arr[newIndex] = temp
       saveLayoutSettings()
     }
 
-    const moveModule = (side, index, direction) => {
-      const modules = side === 'top' ? topModules.value : side === 'left' ? leftModules.value : rightModules.value
-      const newIndex = index + direction
-      if (newIndex < 0 || newIndex >= modules.length) return
-
-      const temp = modules[index]
-      modules[index] = modules[newIndex]
-      modules[newIndex] = temp
-      saveLayoutSettings()
-    }
-
-    const openConfig = (side, index, type) => {
-      configSide.value = side
-      configIndex.value = index
+    const openConfig = (id, type) => {
       configModuleType.value = type
-
-      const config = getModuleConfig(side, index, type)
-      Object.assign(tempConfig, config)
-
+      editingId.value = id
+      if (!moduleConfigs[id]) {
+        moduleConfigs[id] = { ...defaultModuleConfigs[type] }
+        saveModuleConfigs()
+      }
       showConfigPanel.value = true
     }
 
@@ -305,34 +282,17 @@ export default {
       showConfigPanel.value = false
     }
 
-    const updateConfig = (key, value) => {
-      const configKey = getModuleConfigKey(configSide.value, configIndex.value)
-
-      if (configModuleType.value === 'minimax-usage' || configModuleType.value === 'quick-access' || configModuleType.value === 'desktop-icons') {
-        // minimax-usage 和 quick-access 模块直接保存整个配置对象
-        moduleConfigs[configKey] = { ...value }
-        Object.assign(tempConfig, value)
-      } else {
-        tempConfig[key] = value
-        moduleConfigs[configKey] = { ...tempConfig }
-
-        if (configModuleType.value === 'web-search' && key === 'engine') {
-          localStorage.setItem('searchEngine', value)
-        }
-      }
-
+    const updateConfig = (id, value) => {
+      moduleConfigs[id] = { ...(moduleConfigs[id] || {}), ...value }
       saveModuleConfigs()
     }
 
     const resetLayout = () => {
-      topModules.value = []
-      leftModules.value = ['bookmark-search', 'folder']
-      rightModules.value = ['web-search', 'quick-access']
+      const layout = defaultLayout()
+      topModules.value = layout.top
+      leftModules.value = layout.left
+      rightModules.value = layout.right
       saveLayoutSettings()
-    }
-
-    const updateEngine = (engine) => {
-      localStorage.setItem('searchEngine', engine)
     }
 
     const updateBackgroundImage = (value) => {
@@ -340,7 +300,6 @@ export default {
       saveBackgroundImage()
     }
 
-    // 监听背景图变化，更新 body class
     watch(backgroundImage, (newVal) => {
       if (newVal) {
         document.body.classList.add('has-page-background')
@@ -349,26 +308,26 @@ export default {
       }
     })
 
-    // Storage
     const loadLayoutSettings = () => {
       const saved = localStorage.getItem('layoutSettings')
+      const fallback = defaultLayout()
       if (saved) {
         try {
           const settings = JSON.parse(saved)
-          topModules.value = settings.top || []
-          leftModules.value = settings.left || []
-          rightModules.value = settings.right || []
+          topModules.value = isInstanceArray(settings.top) ? settings.top : fallback.top
+          leftModules.value = isInstanceArray(settings.left) ? settings.left : fallback.left
+          rightModules.value = isInstanceArray(settings.right) ? settings.right : fallback.right
         } catch (e) {
           console.error('布局设置解析失败:', e)
-          topModules.value = []
-          leftModules.value = ['bookmark-search', 'folder']
-          rightModules.value = ['web-search', 'quick-access']
+          topModules.value = fallback.top
+          leftModules.value = fallback.left
+          rightModules.value = fallback.right
         }
         backgroundImage.value = localStorage.getItem('backgroundImage') || ''
       } else {
-        topModules.value = []
-        leftModules.value = ['bookmark-search', 'folder']
-        rightModules.value = ['web-search', 'quick-access']
+        topModules.value = fallback.top
+        leftModules.value = fallback.left
+        rightModules.value = fallback.right
       }
     }
 
@@ -381,16 +340,17 @@ export default {
     }
 
     const saveBackgroundImage = () => {
-      try {
-        if (backgroundImage.value) {
+      if (backgroundImage.value) {
+        try {
           localStorage.setItem('backgroundImage', backgroundImage.value)
-        } else {
-          localStorage.removeItem('backgroundImage')
+          backgroundSaveError.value = ''
+        } catch (e) {
+          console.error('背景图保存失败，文件可能过大:', e)
+          backgroundSaveError.value = '背景图保存失败，文件可能过大（已显示但不会持久化）'
         }
-      } catch (e) {
-        console.error('背景图保存失败，文件可能过大:', e)
-        backgroundSaveError.value = '背景图保存失败，文件可能过大'
-        backgroundImage.value = ''
+      } else {
+        localStorage.removeItem('backgroundImage')
+        backgroundSaveError.value = ''
       }
     }
 
@@ -410,7 +370,6 @@ export default {
       localStorage.setItem('moduleConfigs', JSON.stringify(moduleConfigs))
     }
 
-    // Bookmarks
     const loadBookmarks = () => {
       if (typeof chrome === 'undefined' || !chrome.bookmarks) return
       chrome.bookmarks.getTree((bookmarkTreeNodes) => {
@@ -418,7 +377,6 @@ export default {
         if (bookmarksBar && bookmarksBar.children) {
           const direct = []
           const folders = []
-
           bookmarksBar.children.forEach(child => {
             if (child.url) {
               direct.push(child)
@@ -426,7 +384,6 @@ export default {
               folders.push(child)
             }
           })
-
           directBookmarks.value = direct
           subfolders.value = folders
           allBookmarks.value = flattenBookmarks([bookmarksBar])
@@ -466,7 +423,6 @@ export default {
       return result
     }
 
-    // Lifecycle
     onMounted(() => {
       loadLayoutSettings()
       if (backgroundImage.value) {
@@ -479,10 +435,9 @@ export default {
     return {
       showSettings,
       showConfigPanel,
-      configSide,
-      configIndex,
       configModuleType,
-      tempConfig,
+      editingId,
+      editingConfig,
       topModules,
       leftModules,
       rightModules,
@@ -495,16 +450,11 @@ export default {
       allBookmarks,
       directBookmarks,
       subfolders,
-      availableModules: moduleList,
       toggleSettings,
       closeSettings,
       exportLayout,
       handleFileImport,
-      getModuleCols,
-      getModuleEngine,
-      getModuleTitleConfig,
-      getModuleMinimaxConfig,
-      getModuleDesktopIconsConfig,
+      getModuleConfig,
       addModule,
       removeModule,
       moveModule,
@@ -512,7 +462,6 @@ export default {
       closeConfig,
       updateConfig,
       resetLayout,
-      updateEngine,
       updateBackgroundImage
     }
   }

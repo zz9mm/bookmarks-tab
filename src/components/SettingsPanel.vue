@@ -38,45 +38,17 @@
         </div>
       </div>
     </div>
-    <div class="settings-section">
-      <div class="settings-subtitle">左侧模块</div>
-      <div class="module-list">
-        <div v-for="(module, index) in leftModules" :key="'left-' + index" class="module-item">
-          <span>{{ getModuleName(module) }}</span>
-          <div class="module-actions">
-            <button class="module-move" @click="$emit('move-module', 'left', index, -1)" :disabled="index === 0" title="上移">↑</button>
-            <button class="module-move" @click="$emit('move-module', 'left', index, 1)" :disabled="index === (leftModules?.length ?? 0) - 1" title="下移">↓</button>
-            <button v-if="hasConfig(module)" class="module-config" @click="$emit('open-config', 'left', index, module)" title="配置">⚙</button>
-            <button class="module-remove" @click="$emit('remove-module', 'left', index)">×</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-subtitle">右侧模块</div>
-      <div class="module-list">
-        <div v-for="(module, index) in rightModules" :key="'right-' + index" class="module-item">
-          <span>{{ getModuleName(module) }}</span>
-          <div class="module-actions">
-            <button class="module-move" @click="$emit('move-module', 'right', index, -1)" :disabled="index === 0" title="上移">↑</button>
-            <button class="module-move" @click="$emit('move-module', 'right', index, 1)" :disabled="index === (rightModules?.length ?? 0) - 1" title="下移">↓</button>
-            <button v-if="hasConfig(module)" class="module-config" @click="$emit('open-config', 'right', index, module)" title="配置">⚙</button>
-            <button class="module-remove" @click="$emit('remove-module', 'right', index)">×</button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="settings-section">
-      <div class="settings-subtitle">顶部模块（全宽）</div>
+    <div class="settings-section" v-for="(modules, side) in sideModules" :key="side">
+      <div class="settings-subtitle">{{ sideLabel(side) }}</div>
       <div class="module-list">
-        <div v-for="(module, index) in topModules" :key="'top-' + index" class="module-item">
-          <span>{{ getModuleName(module) }}</span>
+        <div v-for="(module, index) in modules" :key="module.id" class="module-item">
+          <span>{{ getModuleName(module.type) }}</span>
           <div class="module-actions">
-            <button class="module-move" @click="$emit('move-module', 'top', index, -1)" :disabled="index === 0" title="上移">↑</button>
-            <button class="module-move" @click="$emit('move-module', 'top', index, 1)" :disabled="index === (topModules?.length ?? 0) - 1" title="下移">↓</button>
-            <button v-if="hasConfig(module)" class="module-config" @click="$emit('open-config', 'top', index, module)" title="配置">⚙</button>
-            <button class="module-remove" @click="$emit('remove-module', 'top', index)">×</button>
+            <button class="module-move" @click="$emit('move-module', module.id, -1)" :disabled="index === 0" title="上移">↑</button>
+            <button class="module-move" @click="$emit('move-module', module.id, 1)" :disabled="index === modules.length - 1" title="下移">↓</button>
+            <button v-if="hasConfig(module.type)" class="module-config" @click="$emit('open-config', module.id, module.type)" title="配置">⚙</button>
+            <button class="module-remove" @click="$emit('remove-module', module.id)">×</button>
           </div>
         </div>
       </div>
@@ -91,10 +63,8 @@
       <div class="config-content">
         <component
           :is="configComponent"
-          :model-value="configModuleType === 'minimax-usage' || configModuleType === 'quick-access' ? tempConfig : tempConfig?.[currentConfigKey]"
-          @update:model-value="handleConfigUpdate"
-          :config="tempConfig"
-          @update:config="handleConfigUpdateFull"
+          :config="editingConfig"
+          @update-config="handleConfigUpdate"
         />
       </div>
     </div>
@@ -106,8 +76,8 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, toRefs } from 'vue'
 import { moduleList } from '../modules/types'
+import type { ModuleInstance, ModuleConfig } from '../modules/types'
 
-// 动态导入模块配置组件
 const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
@@ -122,33 +92,19 @@ const configComponents: Record<string, any> = {
   'desktop-icons': DesktopIconsConfig
 }
 
-interface TempConfig {
-  cols?: number
-  engine?: string
-  text?: string
-  fontSize?: number
-  align?: string
-  fontFamily?: string
-  textIndent?: number
-  apiKey?: string
-  defaultModel?: string
-  showAllModels?: boolean
-  [key: string]: unknown
-}
-
 const props = defineProps<{
   showConfigPanel: boolean
   configModuleType: string
-  tempConfig?: TempConfig
-  topModules?: string[]
-  leftModules?: string[]
-  rightModules?: string[]
+  topModules?: ModuleInstance[]
+  leftModules?: ModuleInstance[]
+  rightModules?: ModuleInstance[]
   backgroundImage?: string
   importError?: string
   backgroundSaveError?: string
+  editingConfig?: ModuleConfig
+  editingId?: string
 }>()
 
-// 将 props 转换为响应式
 const { backgroundImage } = toRefs(props)
 
 const isBackgroundVideo = computed(() => {
@@ -159,11 +115,11 @@ const emit = defineEmits<{
   (e: 'export'): void
   (e: 'file-import', event: Event): void
   (e: 'add-module', type: string, side: 'top' | 'left' | 'right'): void
-  (e: 'remove-module', side: string, index: number): void
-  (e: 'move-module', side: string, index: number, direction: number): void
-  (e: 'open-config', side: string, index: number, type: string): void
+  (e: 'remove-module', id: string): void
+  (e: 'move-module', id: string, direction: number): void
+  (e: 'open-config', id: string, type: string): void
   (e: 'close-config'): void
-  (e: 'update-config', key: string, value: unknown): void
+  (e: 'update-config', id: string, config: ModuleConfig): void
   (e: 'update-background-image', value: string): void
   (e: 'reset-layout'): void
 }>()
@@ -187,7 +143,7 @@ const triggerImport = () => {
   fileInput.value?.click()
 }
 
-const MAX_BACKGROUND_SIZE = 4 * 1024 * 1024 // 4MB，localStorage 限制约 5MB
+const MAX_BACKGROUND_SIZE = 4 * 1024 * 1024
 
 const handleBackgroundImageSelect = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
@@ -207,7 +163,6 @@ const handleBackgroundImageSelect = (event: Event) => {
     }
   }
   reader.readAsDataURL(file)
-  // 清空 input 以便可以重复选择同一文件
   if (backgroundImageInput.value) {
     backgroundImageInput.value.value = ''
   }
@@ -227,38 +182,30 @@ const hasConfig = (type: string): boolean => {
   return module?.hasConfig || false
 }
 
-const currentConfigKey = computed(() => {
-  const keyMap: Record<string, string> = {
-    'web-search': 'engine',
-    'quick-access': '',
-    'title': '',
-    'minimax-usage': 'apiKey'
-  }
-  return keyMap[props.configModuleType] || ''
-})
+const configComponent = computed(() => configComponents[props.configModuleType])
 
-const configComponent = computed(() => {
-  return configComponents[props.configModuleType]
-})
+const sideModules = computed(() => ({
+  left: props.leftModules || [],
+  right: props.rightModules || [],
+  top: props.topModules || []
+}))
+
+const sideLabel = (side: string): string => {
+  if (side === 'left') return '左侧模块'
+  if (side === 'right') return '右侧模块'
+  return '顶部模块（全宽）'
+}
+
+const editingConfig = computed(() => props.editingConfig || {})
 
 const handleFileImport = (event: Event) => {
   emit('file-import', event)
 }
 
-const handleConfigUpdate = (value: unknown) => {
-  if (props.configModuleType === 'minimax-usage' || props.configModuleType === 'quick-access' || props.configModuleType === 'desktop-icons') {
-    // minimax-usage 和 quick-access 传递整个配置对象
-    emit('update-config', props.configModuleType, value)
-  } else {
-    const key = currentConfigKey.value
-    if (key) {
-      emit('update-config', key, value)
-    }
+const handleConfigUpdate = (cfg: ModuleConfig) => {
+  if (props.editingId) {
+    emit('update-config', props.editingId, cfg)
   }
-}
-
-const handleConfigUpdateFull = (key: string, value: unknown) => {
-  emit('update-config', key, value)
 }
 
 const confirmReset = () => {

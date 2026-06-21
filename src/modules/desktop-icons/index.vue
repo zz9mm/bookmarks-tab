@@ -1,5 +1,5 @@
 <template>
-  <div class="module-box desktop-icons-section" :class="{ 'no-background': !hasBackground }">
+  <div class="module-box desktop-icons-section">
     <div class="content-layer">
       <div class="section-title">{{ folderName || '桌面图标' }}</div>
       <div v-if="bookmarks.length > 0" class="desktop-icons-grid" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
@@ -37,7 +37,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import type { ModuleConfig } from '../types'
 
 interface Bookmark {
   id: string
@@ -46,28 +47,40 @@ interface Bookmark {
 }
 
 const props = defineProps<{
-  folderId?: string
-  folderName?: string
-  cols?: number
-  hasBackground?: boolean
+  config?: ModuleConfig
 }>()
+
+defineEmits<{
+  (e: 'update-config', config: ModuleConfig): void
+}>()
+
+const folderId = computed(() => (props.config?.folderId as string) || '')
+const folderName = ref((props.config?.folderName as string) || '')
+const cols = computed(() => (props.config?.cols as number) || 6)
 
 const iconLoaded = ref<Record<string, boolean>>({})
 const bookmarks = ref<Bookmark[]>([])
 
-const loadBookmarks = () => {
-  if (!props.folderId) {
+const loadFolder = () => {
+  if (!folderId.value) {
     bookmarks.value = []
+    folderName.value = ''
     return
   }
   if (typeof chrome === 'undefined' || !chrome.bookmarks) return
-  chrome.bookmarks.getChildren(props.folderId, (children) => {
+  chrome.bookmarks.get(folderId.value, (nodes) => {
+    const node = Array.isArray(nodes) ? nodes[0] : nodes
+    if (node && node.title) {
+      folderName.value = node.title
+    }
+  })
+  chrome.bookmarks.getChildren(folderId.value, (children) => {
     bookmarks.value = (children || []).filter(c => !!c.url) as Bookmark[]
     iconLoaded.value = {}
   })
 }
 
-watch(() => props.folderId, loadBookmarks, { immediate: true })
+watch(folderId, loadFolder, { immediate: true })
 
 const getIcon = (url: string) => {
   try {
@@ -105,7 +118,7 @@ const getColor = (url: string) => {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: #333;
   margin-bottom: 12px;
   letter-spacing: 0.04em;
 }
@@ -127,7 +140,7 @@ const getColor = (url: string) => {
 }
 
 .desktop-icon-item:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .icon-wrapper {
@@ -161,7 +174,7 @@ const getColor = (url: string) => {
 
 .icon-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #333;
   text-align: center;
   max-width: 72px;
   overflow: hidden;
@@ -171,25 +184,8 @@ const getColor = (url: string) => {
 }
 
 .empty-hint {
-  color: rgba(255, 255, 255, 0.5);
+  color: #999;
   font-size: 13px;
   padding: 16px 0;
-}
-
-/* 无背景时使用深色文字 */
-.no-background .section-title {
-  color: #333;
-}
-
-.no-background .icon-label {
-  color: #333;
-}
-
-.no-background .desktop-icon-item:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.no-background .empty-hint {
-  color: #999;
 }
 </style>

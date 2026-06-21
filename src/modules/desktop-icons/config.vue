@@ -3,12 +3,12 @@
     <div class="config-item">
       <label>书签文件夹</label>
       <button class="folder-select-btn" @click="showModal = true">
-        {{ modelValue?.folderName || '请选择文件夹' }}
+        {{ (config?.folderName as string) || '请选择文件夹' }}
       </button>
     </div>
     <div class="config-item">
       <label>每行图标数量</label>
-      <select :value="modelValue?.cols" @change="updateConfig('cols', parseInt(($event.target as HTMLSelectElement).value))">
+      <select :value="(config?.cols as number) || 6" @change="emit('update-config', { ...(config || {}), cols: parseInt(($event.target as HTMLSelectElement).value) })">
         <option :value="4">4 个</option>
         <option :value="5">5 个</option>
         <option :value="6">6 个</option>
@@ -17,7 +17,6 @@
       </select>
     </div>
 
-    <!-- 文件夹选择弹窗 -->
     <teleport to="body">
       <div v-if="showModal" class="folder-modal-overlay" @click.self="showModal = false">
         <div class="folder-modal">
@@ -30,7 +29,7 @@
               v-for="node in folderTree"
               :key="node.id"
               :node="node"
-              :selected-id="modelValue?.folderId"
+              :selected-id="(config?.folderId as string) || ''"
               @select="handleSelect"
             />
           </div>
@@ -42,12 +41,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineComponent, h } from 'vue'
-
-interface DesktopIconsConfig {
-  folderId?: string
-  folderName?: string
-  cols?: number
-}
+import type { ModuleConfig } from '../types'
 
 interface BookmarkNode {
   id: string
@@ -63,11 +57,11 @@ interface FolderTree {
 }
 
 const props = defineProps<{
-  modelValue?: DesktopIconsConfig
+  config?: ModuleConfig
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: DesktopIconsConfig): void
+  (e: 'update-config', config: ModuleConfig): void
 }>()
 
 const showModal = ref(false)
@@ -96,12 +90,8 @@ function buildFolderTree(nodes: BookmarkNode[]): FolderTree[] {
 }
 
 const handleSelect = (id: string, title: string) => {
-  emit('update:modelValue', { ...props.modelValue, folderId: id, folderName: title })
+  emit('update-config', { ...(props.config || {}), folderId: id, folderName: title })
   showModal.value = false
-}
-
-const updateConfig = (key: keyof DesktopIconsConfig, value: any) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
 const FolderNode = defineComponent({

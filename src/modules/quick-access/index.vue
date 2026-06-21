@@ -38,8 +38,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, watch, computed } from 'vue'
 import { getFavicon, getDomain } from '../../composables/useFavicon'
+import type { ModuleConfig } from '../types'
 
 interface Bookmark {
   id: string
@@ -49,12 +50,17 @@ interface Bookmark {
 
 const props = defineProps<{
   bookmarks?: Bookmark[]
-  cols?: number
+  config?: ModuleConfig
 }>()
+
+defineEmits<{
+  (e: 'update-config', config: ModuleConfig): void
+}>()
+
+const cols = computed(() => (props.config?.cols as number) || 4)
 
 const iconLoaded = reactive<Record<string, boolean>>({})
 
-// 监听 bookmarks 变化时重置状态
 watch(() => props.bookmarks, (newBookmarks) => {
   if (newBookmarks) {
     newBookmarks.forEach(bm => {

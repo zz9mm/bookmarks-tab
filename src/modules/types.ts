@@ -2,6 +2,11 @@
 
 export type ModuleType = 'bookmark-search' | 'folder' | 'web-search' | 'quick-access' | 'title' | 'minimax-usage' | 'desktop-icons'
 
+export interface ModuleInstance {
+  id: string
+  type: ModuleType
+}
+
 export interface ModuleInfo {
   type: ModuleType
   name: string
