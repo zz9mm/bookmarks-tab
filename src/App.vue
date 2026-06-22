@@ -13,6 +13,7 @@
       <source :src="backgroundImage" type="video/webm">
     </video>
     <div v-else-if="backgroundImage" class="page-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
+    <div v-if="backgroundImage" class="page-background-tint"></div>
 
     <!-- Settings Button -->
     <button class="settings-btn" @click.stop="toggleSettings" aria-label="设置">

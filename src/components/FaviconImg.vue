@@ -1,5 +1,5 @@
 <template>
-  <img v-if="!failed" :src="currentSrc" @error="handleError" alt="" />
+  <img v-if="!failed" class="favicon-img" :src="currentSrc" @error="handleError" alt="" />
   <slot v-else />
 </template>
 

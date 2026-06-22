@@ -28,12 +28,12 @@ const titleStyle = computed(() => ({
 
 <style scoped>
 .title-section {
-  padding: 12px 16px;
+  padding: 14px 16px;
 }
 
 .title-content {
-  font-weight: 600;
-  color: #333;
+  color: var(--color-text);
+  font-weight: 650;
   word-break: break-word;
 }
 </style>

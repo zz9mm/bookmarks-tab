@@ -221,27 +221,28 @@ const confirmReset = () => {
   height: 120px;
   background-size: cover;
   background-position: center;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
   margin-top: 8px;
 }
+
 .clear-background-btn {
   margin-top: 8px;
-  padding: 6px 12px;
-  background: var(--color-danger);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  min-height: 34px;
+  padding: 6px 10px;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 650;
   cursor: pointer;
 }
-.clear-background-btn:hover {
-  background: #ff7875;
-}
+
 .inline-error {
   color: var(--color-danger);
   background: var(--color-danger-bg);
+  border: 1px solid rgba(220, 38, 38, 0.16);
   font-size: 12px;
   padding: 6px 10px;
-  border-radius: 4px;
+  border-radius: 6px;
   margin-top: 6px;
 }
 </style>

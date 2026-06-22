@@ -104,15 +104,15 @@ const getColor = (url: string) => {
 }
 
 .content-layer {
-  padding: 12px;
+  padding: 14px;
 }
 
 .section-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 650;
+  color: var(--color-text);
   margin-bottom: 12px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .desktop-icons-grid {
@@ -127,18 +127,18 @@ const getColor = (url: string) => {
   gap: 6px;
   padding: 8px 4px;
   text-decoration: none;
-  border-radius: 8px;
-  transition: background 0.15s;
+  border-radius: 6px;
+  transition: background 0.16s ease;
 }
 
 .desktop-icon-item:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--color-surface-hover);
 }
 
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
   display: flex;
@@ -146,10 +146,11 @@ const getColor = (url: string) => {
   justify-content: center;
 }
 
-.icon-wrapper :deep(img) {
+.icon-wrapper :deep(.favicon-img) {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 
 .fallback-icon {
@@ -160,13 +161,13 @@ const getColor = (url: string) => {
   justify-content: center;
   color: white;
   font-size: 22px;
-  font-weight: bold;
-  border-radius: 10px;
+  font-weight: 650;
+  border-radius: 8px;
 }
 
 .icon-label {
   font-size: 12px;
-  color: #333;
+  color: var(--color-text);
   text-align: center;
   max-width: 72px;
   overflow: hidden;
@@ -176,7 +177,7 @@ const getColor = (url: string) => {
 }
 
 .empty-hint {
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 13px;
   padding: 16px 0;
 }

@@ -189,7 +189,7 @@ defineExpose({ fetchUsage })
 
 <style scoped>
 .minimax-usage {
-  padding: 12px;
+  padding: 14px;
 }
 
 .minimax-header {
@@ -200,24 +200,27 @@ defineExpose({ fetchUsage })
 }
 
 .minimax-title {
-  font-weight: 600;
+  font-weight: 650;
   font-size: 14px;
-  color: #333;
+  color: var(--color-text);
 }
 
 .minimax-refresh {
-  padding: 4px 12px;
+  min-height: 32px;
+  padding: 5px 10px;
   font-size: 12px;
-  background: var(--color-info);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
+  font-weight: 650;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 
 .minimax-refresh:hover:not(:disabled) {
-  background: var(--color-info-light);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
 }
 
 .minimax-refresh:disabled {
@@ -230,10 +233,11 @@ defineExpose({ fetchUsage })
 }
 
 .minimax-error {
-  color: #dc2626;
+  color: var(--color-danger);
   padding: 8px;
-  background: #fef2f2;
-  border-radius: 4px;
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 6px;
 }
 
 .minimax-data {
@@ -244,13 +248,14 @@ defineExpose({ fetchUsage })
 
 .model-card {
   padding: 10px;
-  background: #f8f9fa;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
 }
 
 .model-name {
-  font-weight: 600;
-  color: #333;
+  font-weight: 650;
+  color: var(--color-text);
   margin-bottom: 8px;
 }
 
@@ -267,12 +272,12 @@ defineExpose({ fetchUsage })
 }
 
 .stat-label {
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .stat-value {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text);
 }
 
 .stat-progress {
@@ -285,27 +290,27 @@ defineExpose({ fetchUsage })
 .progress-bar {
   flex: 1;
   height: 4px;
-  background: #e5e7eb;
+  background: var(--color-border);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-bar-inner {
   height: 100%;
-  background: var(--color-info);
+  background: var(--color-primary);
   border-radius: 2px;
   transition: width 0.3s;
 }
 
 .progress-percent {
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-muted);
   min-width: 40px;
   text-align: right;
 }
 
 .minimax-empty {
-  color: #999;
+  color: var(--color-text-muted);
   text-align: center;
   padding: 20px;
 }
