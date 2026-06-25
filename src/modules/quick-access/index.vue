@@ -1,7 +1,7 @@
 <template>
   <div class="module-box quick-access-section">
     <div class="content-layer">
-      <h2 class="section-title">快速访问</h2>
+      <h2 class="section-title">{{ title }}</h2>
     <div v-if="displayedBookmarks.length > 0" class="quick-access-grid-container">
       <div class="quick-access-grid" :style="gridStyle">
         <a
@@ -54,6 +54,8 @@ defineEmits<{
 const cols = computed(() => (props.config?.cols as number) || 4)
 const rows = computed(() => (props.config?.rows as number) || 3)
 const folderId = computed(() => (props.config?.folderId as string) || '')
+const folderName = computed(() => (props.config?.folderName as string) || '')
+const title = computed(() => folderName.value ? `快速访问：${folderName.value}` : '快速访问')
 
 // 选定文件夹时单独加载其直接子书签；未选则回退到书签栏根目录（props.bookmarks）
 const folderBookmarks = ref<Bookmark[]>([])
