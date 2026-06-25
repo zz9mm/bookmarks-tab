@@ -435,7 +435,7 @@ button {
   z-index: -2;
   background-size: cover;
   background-position: center;
-  filter: blur(2px);
+  filter: none;
   transform: scale(1.02);
   pointer-events: none;
 }
