@@ -23,11 +23,6 @@
     :config="config"
     @update-config="emit('update-config', $event)"
   />
-  <MinimaxUsage
-    v-else-if="module.type === 'minimax-usage'"
-    :config="config"
-    @update-config="emit('update-config', $event)"
-  />
 </template>
 
 <script setup lang="ts">
@@ -36,7 +31,6 @@ import FolderTree from '../modules/folder/index.vue'
 import WebSearch from '../modules/web-search/index.vue'
 import QuickAccess from '../modules/quick-access/index.vue'
 import Title from '../modules/title/index.vue'
-import MinimaxUsage from '../modules/minimax-usage/index.vue'
 import type { ModuleInstance, ModuleConfig } from '../modules/types'
 
 interface Bookmark {

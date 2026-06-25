@@ -1,6 +1,6 @@
 // 模块类型定义
 
-export type ModuleType = 'bookmark-search' | 'folder' | 'web-search' | 'quick-access' | 'title' | 'minimax-usage'
+export type ModuleType = 'bookmark-search' | 'folder' | 'web-search' | 'quick-access' | 'title'
 
 export interface ModuleInstance {
   id: string
@@ -23,8 +23,7 @@ export const defaultModuleConfigs: Record<ModuleType, ModuleConfig> = {
   'folder': {},
   'web-search': { engine: 'bing' },
   'quick-access': { cols: 4, rows: 3, folderId: '', folderName: '' },
-  'title': { text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 },
-  'minimax-usage': { apiKey: '' }
+  'title': { text: '文本', fontSize: 24, align: 'center', fontFamily: 'inherit', textIndent: 0 }
 }
 
 export const moduleList: ModuleInfo[] = [
@@ -32,6 +31,5 @@ export const moduleList: ModuleInfo[] = [
   { type: 'folder', name: '收藏夹', hasConfig: false },
   { type: 'web-search', name: '网页搜索', hasConfig: true },
   { type: 'quick-access', name: '快速访问', hasConfig: true },
-  { type: 'title', name: '文本', hasConfig: true },
-  { type: 'minimax-usage', name: 'Minimax 用量', hasConfig: true }
+  { type: 'title', name: '文本', hasConfig: true }
 ]

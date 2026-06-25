@@ -176,8 +176,7 @@ button {
 
 .settings-action-btn,
 .reset-layout-btn,
-.clear-background-btn,
-.minimax-refresh {
+.clear-background-btn {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-surface);
@@ -195,8 +194,7 @@ button {
 
 .settings-action-btn:hover,
 .reset-layout-btn:hover,
-.clear-background-btn:hover,
-.minimax-refresh:hover:not(:disabled) {
+.clear-background-btn:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-border-strong);
 }

@@ -81,13 +81,11 @@ import type { ModuleInstance, ModuleConfig } from '../modules/types'
 const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
-const MinimaxUsageConfig = defineAsyncComponent(() => import('../modules/minimax-usage/config.vue'))
 
 const configComponents: Record<string, any> = {
   'web-search': WebSearchConfig,
   'quick-access': QuickAccessConfig,
-  'title': TitleConfig,
-  'minimax-usage': MinimaxUsageConfig
+  'title': TitleConfig
 }
 
 const props = defineProps<{
