@@ -35,6 +35,7 @@
       :background-save-error="backgroundSaveError"
       :editing-config="editingConfig"
       :editing-id="editingId"
+      :module-configs="moduleConfigs"
       @export="exportLayout"
       @file-import="handleFileImport"
       @add-module="addModule"
@@ -437,6 +438,7 @@ export default {
       configModuleType,
       editingId,
       editingConfig,
+      moduleConfigs,
       topModules,
       leftModules,
       rightModules,

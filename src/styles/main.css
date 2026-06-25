@@ -339,6 +339,19 @@ button {
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 
+.config-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(15, 23, 42, 0.18);
+  animation: overlayFadeIn 0.16s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .module-config-panel {
   position: fixed;
   top: 50%;

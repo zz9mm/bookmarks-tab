@@ -42,8 +42,19 @@
     <div class="settings-section" v-for="(modules, side) in sideModules" :key="side">
       <div class="settings-subtitle">{{ sideLabel(side) }}</div>
       <div class="module-list">
-        <div v-for="(module, index) in modules" :key="module.id" class="module-item">
-          <span>{{ getModuleName(module.type) }}</span>
+        <div
+          v-for="(module, index) in modules"
+          :key="module.id"
+          class="module-item"
+          :class="{ 'module-item-active': showConfigPanel && module.id === editingId }"
+        >
+          <div class="module-label">
+            <span class="module-name">
+              {{ getModuleName(module.type) }}
+              <span v-if="instanceMeta[module.id]?.total > 1" class="module-ordinal">#{{ instanceMeta[module.id].ordinal }}</span>
+            </span>
+            <span v-if="instanceMeta[module.id]?.detail" class="module-detail">{{ instanceMeta[module.id].detail }}</span>
+          </div>
           <div class="module-actions">
             <button class="module-move" @click="$emit('move-module', module.id, -1)" :disabled="index === 0" title="上移">↑</button>
             <button class="module-move" @click="$emit('move-module', module.id, 1)" :disabled="index === modules.length - 1" title="下移">↓</button>
@@ -55,19 +66,27 @@
     </div>
 
     <!-- Module Config Panel -->
-    <div v-if="showConfigPanel" class="module-config-panel" @click.stop role="dialog" aria-modal="true" aria-label="模块设置">
-      <div class="config-header">
-        <span class="config-title">模块设置</span>
-        <button class="config-close" @click="$emit('close-config')">&times;</button>
+    <Teleport to="body">
+      <div v-if="showConfigPanel" class="config-overlay" @click="$emit('close-config')">
+        <div class="module-config-panel" @click.stop role="dialog" aria-modal="true" aria-label="模块设置">
+          <div class="config-header">
+            <span class="config-title">
+              {{ getModuleName(configModuleType) }}
+              <span v-if="editingMeta?.detail" class="config-title-detail">· {{ editingMeta.detail }}</span>
+              <span v-else-if="editingMeta?.total > 1" class="config-title-detail">· #{{ editingMeta.ordinal }}</span>
+            </span>
+            <button class="config-close" @click="$emit('close-config')">&times;</button>
+          </div>
+          <div class="config-content">
+            <component
+              :is="configComponent"
+              :config="editingConfig"
+              @update-config="handleConfigUpdate"
+            />
+          </div>
+        </div>
       </div>
-      <div class="config-content">
-        <component
-          :is="configComponent"
-          :config="editingConfig"
-          @update-config="handleConfigUpdate"
-        />
-      </div>
-    </div>
+    </Teleport>
 
     <button class="reset-layout-btn" @click="confirmReset">重置布局</button>
   </div>
@@ -99,6 +118,7 @@ const props = defineProps<{
   backgroundSaveError?: string
   editingConfig?: ModuleConfig
   editingId?: string
+  moduleConfigs?: Record<string, ModuleConfig>
 }>()
 
 const { backgroundImage } = toRefs(props)
@@ -178,12 +198,44 @@ const hasConfig = (type: string): boolean => {
   return module?.hasConfig || false
 }
 
+const engineLabels: Record<string, string> = {
+  bing: 'Bing',
+  baidu: '百度',
+  google: 'Google'
+}
+
+// 为每个模块实例生成区分信息：同类型的序号 + 可识别的配置内容
+const instanceMeta = computed(() => {
+  const all = [
+    ...(props.topModules || []),
+    ...(props.leftModules || []),
+    ...(props.rightModules || [])
+  ]
+  const counts: Record<string, number> = {}
+  const totals: Record<string, number> = {}
+  for (const m of all) totals[m.type] = (totals[m.type] || 0) + 1
+
+  const meta: Record<string, { ordinal: number; total: number; detail: string }> = {}
+  for (const m of all) {
+    counts[m.type] = (counts[m.type] || 0) + 1
+    const cfg = props.moduleConfigs?.[m.id] || {}
+    let detail = ''
+    if (m.type === 'title') detail = String(cfg.text ?? '').trim()
+    else if (m.type === 'quick-access') detail = String(cfg.folderName ?? '').trim()
+    else if (m.type === 'web-search') detail = engineLabels[String(cfg.engine ?? '')] || ''
+    meta[m.id] = { ordinal: counts[m.type], total: totals[m.type], detail }
+  }
+  return meta
+})
+
+const editingMeta = computed(() => (props.editingId ? instanceMeta.value[props.editingId] : undefined))
+
 const configComponent = computed(() => configComponents[props.configModuleType])
 
 const sideModules = computed(() => ({
+  top: props.topModules || [],
   left: props.leftModules || [],
-  right: props.rightModules || [],
-  top: props.topModules || []
+  right: props.rightModules || []
 }))
 
 const sideLabel = (side: string): string => {
@@ -241,4 +293,50 @@ const confirmReset = () => {
   border-radius: 6px;
   margin-top: 6px;
 }
+
+.module-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.module-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.module-ordinal {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+
+.module-detail {
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+:deep(.module-item.module-item-active) {
+  border-color: var(--color-accent, #2563eb);
+  box-shadow: 0 0 0 1px var(--color-accent, #2563eb) inset;
+}
+
+.config-title-detail {
+  font-weight: 450;
+  color: var(--color-text-muted);
+}
+
 </style>
