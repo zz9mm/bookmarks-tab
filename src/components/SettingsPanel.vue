@@ -82,14 +82,12 @@ const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
 const MinimaxUsageConfig = defineAsyncComponent(() => import('../modules/minimax-usage/config.vue'))
-const DesktopIconsConfig = defineAsyncComponent(() => import('../modules/desktop-icons/config.vue'))
 
 const configComponents: Record<string, any> = {
   'web-search': WebSearchConfig,
   'quick-access': QuickAccessConfig,
   'title': TitleConfig,
-  'minimax-usage': MinimaxUsageConfig,
-  'desktop-icons': DesktopIconsConfig
+  'minimax-usage': MinimaxUsageConfig
 }
 
 const props = defineProps<{

@@ -672,8 +672,7 @@ button {
   background: var(--color-surface-hover);
 }
 
-.quick-access-section .content-layer,
-.desktop-icons-section .content-layer {
+.quick-access-section .content-layer {
   background: transparent;
 }
 

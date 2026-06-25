@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getDomain } from '../../composables/useFavicon'
 import FaviconImg from '../../components/FaviconImg.vue'
 import type { ModuleConfig } from '../types'
@@ -53,16 +53,35 @@ defineEmits<{
 
 const cols = computed(() => (props.config?.cols as number) || 4)
 const rows = computed(() => (props.config?.rows as number) || 3)
+const folderId = computed(() => (props.config?.folderId as string) || '')
 
-const displayedBookmarks = computed(() => {
-  const all = props.bookmarks || []
-  return all.slice(0, cols.value * rows.value)
-})
+// 选定文件夹时单独加载其直接子书签；未选则回退到书签栏根目录（props.bookmarks）
+const folderBookmarks = ref<Bookmark[]>([])
 
-const hiddenCount = computed(() => {
-  const all = props.bookmarks || []
-  return Math.max(0, all.length - cols.value * rows.value)
-})
+const loadFolder = () => {
+  if (!folderId.value) {
+    folderBookmarks.value = []
+    return
+  }
+  if (typeof chrome === 'undefined' || !chrome.bookmarks) return
+  chrome.bookmarks.getChildren(folderId.value, (children) => {
+    folderBookmarks.value = (children || []).filter(c => !!c.url) as Bookmark[]
+  })
+}
+
+watch(folderId, loadFolder, { immediate: true })
+
+const sourceBookmarks = computed(() =>
+  folderId.value ? folderBookmarks.value : (props.bookmarks || [])
+)
+
+const displayedBookmarks = computed(() =>
+  sourceBookmarks.value.slice(0, cols.value * rows.value)
+)
+
+const hiddenCount = computed(() =>
+  Math.max(0, sourceBookmarks.value.length - cols.value * rows.value)
+)
 
 const gridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`,
