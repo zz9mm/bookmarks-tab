@@ -1,7 +1,10 @@
 <template>
   <div class="module-box quick-access-section">
     <div class="content-layer">
-      <h2 class="section-title">{{ title }}</h2>
+      <h2 class="section-title">
+        <span class="qa-title-tag">快速访问</span>
+        <span v-if="folderName" class="qa-title-name" :title="folderName">{{ folderName }}</span>
+      </h2>
     <div v-if="displayedBookmarks.length > 0" class="quick-access-grid-container">
       <div class="quick-access-grid" :style="gridStyle">
         <a
@@ -55,7 +58,6 @@ const cols = computed(() => (props.config?.cols as number) || 4)
 const rows = computed(() => (props.config?.rows as number) || 3)
 const folderId = computed(() => (props.config?.folderId as string) || '')
 const folderName = computed(() => (props.config?.folderName as string) || '')
-const title = computed(() => folderName.value ? `快速访问：${folderName.value}` : '快速访问')
 
 // 选定文件夹时单独加载其直接子书签；未选则回退到书签栏根目录（props.bookmarks）
 const folderBookmarks = ref<Bookmark[]>([])
@@ -114,6 +116,36 @@ const getColor = (url: string): string => {
 </script>
 
 <style scoped>
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.qa-title-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  line-height: 1.4;
+}
+
+.qa-title-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--color-text);
+}
+
 .quick-access-overflow {
   padding: 8px 18px;
   font-size: 12px;
