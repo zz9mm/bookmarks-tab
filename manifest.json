@@ -12,6 +12,9 @@
   "permissions": [
     "bookmarks"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "chrome_url_overrides": {
     "newtab": "dist/index.html"
   }

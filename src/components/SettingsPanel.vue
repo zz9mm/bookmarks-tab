@@ -156,6 +156,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, toRefs } from 'vue'
 import { moduleList } from '../modules/types'
+import { useEscClose } from '../composables/useEscClose'
 import type { ModuleInstance, ModuleConfig } from '../modules/types'
 
 interface ClockSettings {
@@ -218,6 +219,9 @@ const emit = defineEmits<{
   (e: 'update-theme-schedule', partial: Partial<ThemeSchedule>): void
   (e: 'reset-layout'): void
 }>()
+
+// 模块配置面板:Esc 关闭(叠在设置面板之上,优先于设置面板)
+useEscClose(computed(() => !!props.showConfigPanel), () => emit('close-config'))
 
 const previewVideoRef = ref<HTMLVideoElement | null>(null)
 

@@ -50,6 +50,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, defineComponent, h } from 'vue'
+import { useEscClose } from '../../composables/useEscClose'
 import type { ModuleConfig } from '../types'
 
 interface BookmarkNode {
@@ -75,6 +76,9 @@ const emit = defineEmits<{
 
 const showModal = ref(false)
 const folderTree = ref<FolderTree[]>([])
+
+const closeModal = () => { showModal.value = false }
+useEscClose(showModal, closeModal)
 
 const layouts = [
   { value: '3x3', cols: 3, rows: 3, label: '3 × 3（9 个）' },

@@ -122,6 +122,7 @@ import { ref, reactive, onMounted, watch, computed } from 'vue'
 import ModuleRenderer from './components/ModuleRenderer.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import ClockWidget from './components/ClockWidget.vue'
+import { useEscClose } from './composables/useEscClose'
 import { defaultModuleConfigs } from './modules/types'
 
 const defaultClockSettings = () => ({ show: true, style: 'stacked', hour12: false, showSeconds: true })
@@ -197,6 +198,9 @@ export default {
       showSettings.value = false
       showConfigPanel.value = false
     }
+
+    // 设置面板:Esc 关闭(模块配置面板叠加时由其自身优先处理)
+    useEscClose(showSettings, closeSettings)
 
     const exportLayout = () => {
       const data = {

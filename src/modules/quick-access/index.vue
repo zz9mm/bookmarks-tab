@@ -95,11 +95,12 @@
               >
             </label>
             <label class="qa-field">
-              <span>名称</span>
+              <span>名称 <span v-if="fetchingTitle" class="qa-fetching">· 获取中…</span></span>
               <input
                 v-model="addTitle"
                 type="text"
-                placeholder="留空则用网址域名"
+                :placeholder="fetchingTitle ? '正在获取网页标题…' : '自动获取，留空则用域名'"
+                @input="onTitleInput"
                 @keydown.enter="submitAdd"
               >
             </label>
@@ -118,6 +119,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { getDomain } from '../../composables/useFavicon'
+import { useEscClose } from '../../composables/useEscClose'
 import FaviconImg from '../../components/FaviconImg.vue'
 import type { ModuleConfig } from '../types'
 
@@ -260,12 +262,17 @@ const showAddModal = ref(false)
 const addUrl = ref('')
 const addTitle = ref('')
 const addError = ref('')
+const fetchingTitle = ref(false)
+const titleAutoFilled = ref(false) // 名称是否由自动抓取填入(用户手动改过则不再覆盖)
 const urlInputRef = ref<HTMLInputElement | null>(null)
+let titleTimer: ReturnType<typeof setTimeout> | undefined
 
 const openAddModal = () => {
   addUrl.value = ''
   addTitle.value = ''
   addError.value = ''
+  fetchingTitle.value = false
+  titleAutoFilled.value = false
   showAddModal.value = true
   nextTick(() => urlInputRef.value?.focus())
 }
@@ -273,6 +280,45 @@ const openAddModal = () => {
 const closeAddModal = () => {
   showAddModal.value = false
 }
+
+// 抓取网页 <title>;需 host_permissions 跨域读取,失败回退域名
+const fetchTitle = async (url: string) => {
+  fetchingTitle.value = true
+  try {
+    const res = await fetch(url, { redirect: 'follow' })
+    const html = await res.text()
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    const title = doc.querySelector('title')?.textContent?.trim()
+    if (title && (!addTitle.value.trim() || titleAutoFilled.value)) {
+      addTitle.value = title
+      titleAutoFilled.value = true
+    }
+  } catch {
+    /* 跨域/网络失败,保持名称为空,提交时回退域名 */
+  } finally {
+    fetchingTitle.value = false
+  }
+}
+
+// 名称为空(或仍是自动填入的)时,输入网址自动抓取标题(防抖)
+watch(addUrl, (val) => {
+  if (titleTimer) clearTimeout(titleTimer)
+  if (addTitle.value.trim() && !titleAutoFilled.value) return
+  const url = normalizeUrl(val)
+  if (!url) return
+  titleTimer = setTimeout(() => fetchTitle(url), 600)
+})
+
+// 用户手动编辑名称后,不再被自动抓取覆盖
+const onTitleInput = () => {
+  titleAutoFilled.value = false
+}
+
+// Esc 关闭弹窗;关闭时清理防抖定时器
+useEscClose(showAddModal, closeAddModal)
+watch(showAddModal, (open) => {
+  if (!open && titleTimer) clearTimeout(titleTimer)
+})
 
 const normalizeUrl = (raw: string): string | null => {
   let url = raw.trim()
@@ -520,6 +566,11 @@ const getColor = (url: string): string => {
 
 .qa-field input:focus {
   border-color: var(--color-primary);
+}
+
+.qa-fetching {
+  color: var(--color-primary);
+  font-weight: 400;
 }
 
 .qa-modal-error {
