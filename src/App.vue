@@ -202,6 +202,17 @@ export default {
     // 设置面板:Esc 关闭(模块配置面板叠加时由其自身优先处理)
     useEscClose(showSettings, closeSettings)
 
+    // 设置面板:点击面板/相关弹窗以外的区域时收回
+    const onOutsideClick = (e) => {
+      const el = e.target
+      if (el.closest && el.closest('.settings-panel, .settings-btn, .config-overlay, .folder-modal-overlay, .qa-modal-overlay')) return
+      closeSettings()
+    }
+    watch(showSettings, (open) => {
+      if (open) document.addEventListener('mousedown', onOutsideClick)
+      else document.removeEventListener('mousedown', onOutsideClick)
+    })
+
     const exportLayout = () => {
       const data = {
         top: JSON.parse(JSON.stringify(topModules.value)),
