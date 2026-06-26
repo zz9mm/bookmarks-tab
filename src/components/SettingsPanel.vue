@@ -16,6 +16,43 @@
         <button class="clear-background-btn" @click="clearBackgroundImage">清除背景图</button>
       </div>
     </div>
+
+    <!-- 时钟设置 -->
+    <div class="settings-section">
+      <div class="settings-subtitle">时钟</div>
+      <div class="config-item">
+        <label>显示时钟</label>
+        <select :value="(clockSettings?.show ?? true) ? '1' : '0'" @change="emit('update-clock', { show: ($event.target as HTMLSelectElement).value === '1' })">
+          <option value="1">显示</option>
+          <option value="0">隐藏</option>
+        </select>
+      </div>
+      <template v-if="clockSettings?.show ?? true">
+        <div class="config-item">
+          <label>样式</label>
+          <select :value="clockSettings?.style || 'stacked'" @change="emit('update-clock', { style: ($event.target as HTMLSelectElement).value })">
+            <option value="minimal">简约（纯时间）</option>
+            <option value="stacked">时间 + 日期</option>
+            <option value="card">玻璃卡片</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label>时间格式</label>
+          <select :value="(clockSettings?.hour12) ? '12' : '24'" @change="emit('update-clock', { hour12: ($event.target as HTMLSelectElement).value === '12' })">
+            <option value="24">24 小时制</option>
+            <option value="12">12 小时制</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label>显示秒</label>
+          <select :value="(clockSettings?.showSeconds ?? true) ? '1' : '0'" @change="emit('update-clock', { showSeconds: ($event.target as HTMLSelectElement).value === '1' })">
+            <option value="1">显示</option>
+            <option value="0">隐藏</option>
+          </select>
+        </div>
+      </template>
+    </div>
+
     <div class="settings-header">
       <div class="settings-title">布局设置</div>
       <div class="settings-actions">
@@ -97,6 +134,13 @@ import { computed, defineAsyncComponent, ref, toRefs } from 'vue'
 import { moduleList } from '../modules/types'
 import type { ModuleInstance, ModuleConfig } from '../modules/types'
 
+interface ClockSettings {
+  show?: boolean
+  style?: string
+  hour12?: boolean
+  showSeconds?: boolean
+}
+
 const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
@@ -119,6 +163,7 @@ const props = defineProps<{
   editingConfig?: ModuleConfig
   editingId?: string
   moduleConfigs?: Record<string, ModuleConfig>
+  clockSettings?: ClockSettings
 }>()
 
 const { backgroundImage } = toRefs(props)
@@ -137,6 +182,7 @@ const emit = defineEmits<{
   (e: 'close-config'): void
   (e: 'update-config', id: string, config: ModuleConfig): void
   (e: 'update-background-image', value: string): void
+  (e: 'update-clock', partial: Partial<ClockSettings>): void
   (e: 'reset-layout'): void
 }>()
 

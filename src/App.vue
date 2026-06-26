@@ -14,6 +14,9 @@
     </video>
     <div v-else-if="backgroundImage" class="page-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
 
+    <!-- Clock Widget (fixed top-left) -->
+    <ClockWidget v-if="clockSettings.show" :settings="clockSettings" />
+
     <!-- Theme Toggle Button -->
     <button class="theme-btn" @click.stop="toggleTheme" :aria-label="theme === 'dark' ? '切换到浅色' : '切换到深色'">
       <svg v-if="theme === 'dark'" viewBox="0 0 24 24" width="20" height="20">
@@ -46,6 +49,8 @@
       :editing-config="editingConfig"
       :editing-id="editingId"
       :module-configs="moduleConfigs"
+      :clock-settings="clockSettings"
+      @update-clock="updateClockSettings"
       @export="exportLayout"
       @file-import="handleFileImport"
       @add-module="addModule"
@@ -112,7 +117,10 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import ModuleRenderer from './components/ModuleRenderer.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
+import ClockWidget from './components/ClockWidget.vue'
 import { defaultModuleConfigs } from './modules/types'
+
+const defaultClockSettings = () => ({ show: true, style: 'stacked', hour12: false, showSeconds: true })
 
 const makeId = () => (typeof crypto !== 'undefined' && crypto.randomUUID
   ? crypto.randomUUID()
@@ -140,7 +148,7 @@ const defaultLayout = () => ({
 
 export default {
   name: 'App',
-  components: { ModuleRenderer, SettingsPanel },
+  components: { ModuleRenderer, SettingsPanel, ClockWidget },
   setup() {
     const showSettings = ref(false)
     const showConfigPanel = ref(false)
@@ -157,6 +165,7 @@ export default {
     const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
     const theme = ref('light')
+    const clockSettings = reactive(defaultClockSettings())
 
     const isVideo = computed(() => {
       return backgroundImage.value && backgroundImage.value.startsWith('data:video/')
@@ -320,6 +329,11 @@ export default {
       localStorage.setItem('theme', newVal)
     })
 
+    const updateClockSettings = (partial) => {
+      Object.assign(clockSettings, partial)
+      localStorage.setItem('clockSettings', JSON.stringify(clockSettings))
+    }
+
     watch(backgroundImage, (newVal) => {
       if (newVal) {
         document.body.classList.add('has-page-background')
@@ -447,6 +461,10 @@ export default {
       const savedTheme = localStorage.getItem('theme')
       theme.value = savedTheme === 'dark' ? 'dark' : 'light'
       document.body.classList.toggle('dark', theme.value === 'dark')
+      try {
+        const savedClock = JSON.parse(localStorage.getItem('clockSettings') || '{}')
+        if (savedClock && typeof savedClock === 'object') Object.assign(clockSettings, savedClock)
+      } catch (e) { /* 忽略损坏的时钟配置 */ }
       loadLayoutSettings()
       if (backgroundImage.value) {
         document.body.classList.add('has-page-background')
@@ -488,7 +506,9 @@ export default {
       updateConfig,
       resetLayout,
       updateBackgroundImage,
-      toggleTheme
+      toggleTheme,
+      clockSettings,
+      updateClockSettings
     }
   }
 }
