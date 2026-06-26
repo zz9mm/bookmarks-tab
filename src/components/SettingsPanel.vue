@@ -12,13 +12,34 @@
           <div v-if="backgroundError" class="inline-error">{{ backgroundError }}</div>
         </div>
         <div v-if="backgroundSaveError" class="inline-error">{{ backgroundSaveError }}</div>
-        <div v-if="backgroundImage" class="config-item">
-          <video v-if="isBackgroundVideo" class="background-preview" autoplay muted playsinline @timeupdate="handlePreviewVideoTimeUpdate" ref="previewVideoRef">
-            <source :src="backgroundImage" type="video/webm">
-          </video>
-          <div v-else class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
-          <button class="clear-background-btn" @click="clearBackgroundImage">清除背景图</button>
-        </div>
+        <template v-if="backgroundUrl">
+          <div class="config-item">
+            <video v-if="isBackgroundVideo" class="background-preview" autoplay muted playsinline @timeupdate="handlePreviewVideoTimeUpdate" ref="previewVideoRef">
+              <source :src="backgroundUrl" type="video/webm">
+            </video>
+            <div v-else class="background-preview" :style="`background-image: url(${backgroundUrl})`"></div>
+            <button class="clear-background-btn" @click="$emit('clear-background')">清除背景图</button>
+          </div>
+          <div class="config-item">
+            <label>适配方式</label>
+            <select :value="backgroundSettings?.fit || 'cover'" @change="emit('update-background-settings', { fit: ($event.target as HTMLSelectElement).value })">
+              <option value="cover">填充（裁剪铺满）</option>
+              <option value="contain">适应（完整显示）</option>
+              <option value="tile">平铺</option>
+              <option value="original">原尺寸</option>
+            </select>
+          </div>
+          <div class="config-item">
+            <label>位置</label>
+            <select :value="backgroundSettings?.position || 'center'" @change="emit('update-background-settings', { position: ($event.target as HTMLSelectElement).value })">
+              <option value="center">居中</option>
+              <option value="top">顶部</option>
+              <option value="bottom">底部</option>
+              <option value="left">左侧</option>
+              <option value="right">右侧</option>
+            </select>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -203,6 +224,11 @@ interface ThemeSchedule {
   darkEnd?: string
 }
 
+interface BackgroundSettings {
+  fit?: string
+  position?: string
+}
+
 const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
@@ -219,7 +245,9 @@ const props = defineProps<{
   topModules?: ModuleInstance[]
   leftModules?: ModuleInstance[]
   rightModules?: ModuleInstance[]
-  backgroundImage?: string
+  backgroundUrl?: string
+  backgroundType?: string
+  backgroundSettings?: BackgroundSettings
   importError?: string
   backgroundSaveError?: string
   editingConfig?: ModuleConfig
@@ -230,11 +258,9 @@ const props = defineProps<{
   themeSchedule?: ThemeSchedule
 }>()
 
-const { backgroundImage } = toRefs(props)
+const { backgroundType } = toRefs(props)
 
-const isBackgroundVideo = computed(() => {
-  return backgroundImage.value?.startsWith('data:video/')
-})
+const isBackgroundVideo = computed(() => backgroundType.value === 'video')
 
 const emit = defineEmits<{
   (e: 'export'): void
@@ -245,7 +271,9 @@ const emit = defineEmits<{
   (e: 'open-config', id: string, type: string): void
   (e: 'close-config'): void
   (e: 'update-config', id: string, config: ModuleConfig): void
-  (e: 'update-background-image', value: string): void
+  (e: 'select-background', file: File): void
+  (e: 'clear-background'): void
+  (e: 'update-background-settings', partial: Partial<BackgroundSettings>): void
   (e: 'update-clock', partial: Partial<ClockSettings>): void
   (e: 'update-theme-mode', mode: string): void
   (e: 'update-theme-schedule', partial: Partial<ThemeSchedule>): void
@@ -274,33 +302,22 @@ const triggerImport = () => {
   fileInput.value?.click()
 }
 
-const MAX_BACKGROUND_SIZE = 4 * 1024 * 1024
+// 存 IndexedDB,放宽到 50MB(原始 Blob,无 base64 膨胀)
+const MAX_BACKGROUND_SIZE = 50 * 1024 * 1024
 
 const handleBackgroundImageSelect = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
 
   if (file.size > MAX_BACKGROUND_SIZE) {
-    backgroundError.value = '文件过大，请选择小于 4MB 的图片或视频'
+    backgroundError.value = '文件过大，请选择小于 50MB 的图片或视频'
     return
   }
   backgroundError.value = ''
-
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const result = e.target?.result as string
-    if (result) {
-      emit('update-background-image', result)
-    }
-  }
-  reader.readAsDataURL(file)
+  emit('select-background', file)
   if (backgroundImageInput.value) {
     backgroundImageInput.value.value = ''
   }
-}
-
-const clearBackgroundImage = () => {
-  emit('update-background-image', '')
 }
 
 const getModuleName = (type: string): string => {

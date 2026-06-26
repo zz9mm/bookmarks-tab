@@ -2,17 +2,18 @@
   <div id="app-container">
     <!-- Page Background -->
     <video
-      v-if="backgroundImage && isVideo"
+      v-if="backgroundUrl && isVideo"
       ref="bgVideoRef"
       class="page-background-video"
+      :style="videoStyle"
       autoplay
       muted
       playsinline
       @timeupdate="handleVideoTimeUpdate"
     >
-      <source :src="backgroundImage" type="video/webm">
+      <source :src="backgroundUrl" type="video/webm">
     </video>
-    <div v-else-if="backgroundImage" class="page-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
+    <div v-else-if="backgroundUrl" class="page-background" :style="bgStyle"></div>
 
     <!-- Clock Widget (fixed top-left) -->
     <ClockWidget v-if="clockSettings.show" :settings="clockSettings" />
@@ -43,7 +44,9 @@
       :top-modules="topModules"
       :left-modules="leftModules"
       :right-modules="rightModules"
-      :background-image="backgroundImage"
+      :background-url="backgroundUrl"
+      :background-type="backgroundType"
+      :background-settings="backgroundSettings"
       :import-error="importError"
       :background-save-error="backgroundSaveError"
       :editing-config="editingConfig"
@@ -63,13 +66,15 @@
       @open-config="openConfig"
       @close-config="closeConfig"
       @update-config="updateConfig"
-      @update-background-image="updateBackgroundImage"
+      @select-background="selectBackground"
+      @clear-background="clearBackgroundImage"
+      @update-background-settings="updateBackgroundSettings"
       @reset-layout="resetLayout"
     />
     </Transition>
 
     <!-- Main Layout -->
-    <div class="main-layout" :class="{ 'has-background': backgroundImage }" @click="closeSettings">
+    <div class="main-layout" :class="{ 'has-background': backgroundUrl }" @click="closeSettings">
       <!-- Top Panel -->
       <div class="top-panel">
         <ModuleRenderer
@@ -123,6 +128,7 @@ import ModuleRenderer from './components/ModuleRenderer.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import ClockWidget from './components/ClockWidget.vue'
 import { useEscClose } from './composables/useEscClose'
+import { getBackground, putBackground, clearBackground, dataURLToBlob, blobToDataURL } from './composables/useBackgroundStore'
 import { defaultModuleConfigs } from './modules/types'
 
 const defaultClockSettings = () => ({ show: true, style: 'stacked', hour12: false, showSeconds: true })
@@ -165,7 +171,9 @@ export default {
     const leftModules = ref([])
     const rightModules = ref([])
     const moduleConfigs = reactive({})
-    const backgroundImage = ref('')
+    const backgroundUrl = ref('')   // 渲染用的 object URL
+    const backgroundType = ref('')  // 'image' | 'video'
+    const backgroundSettings = reactive({ fit: 'cover', position: 'center' })
     const importError = ref('')
     const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
@@ -174,9 +182,26 @@ export default {
     const theme = ref('light') // 实际生效的主题(由 themeMode 派生)
     const clockSettings = reactive(defaultClockSettings())
 
-    const isVideo = computed(() => {
-      return backgroundImage.value && backgroundImage.value.startsWith('data:video/')
+    const isVideo = computed(() => backgroundType.value === 'video')
+
+    // 背景图样式:适配方式 + 位置
+    const positionValue = computed(() => {
+      const map = { center: 'center', top: 'top center', bottom: 'bottom center', left: 'left center', right: 'right center' }
+      return map[backgroundSettings.position] || 'center'
     })
+    const bgStyle = computed(() => {
+      const fit = backgroundSettings.fit
+      return {
+        backgroundImage: `url(${backgroundUrl.value})`,
+        backgroundSize: fit === 'cover' ? 'cover' : fit === 'contain' ? 'contain' : 'auto',
+        backgroundRepeat: fit === 'tile' ? 'repeat' : 'no-repeat',
+        backgroundPosition: positionValue.value
+      }
+    })
+    const videoStyle = computed(() => ({
+      objectFit: backgroundSettings.fit === 'contain' ? 'contain' : 'cover',
+      objectPosition: positionValue.value
+    }))
 
     const handleVideoTimeUpdate = () => {
       const video = bgVideoRef.value
@@ -213,17 +238,23 @@ export default {
       else document.removeEventListener('mousedown', onOutsideClick)
     })
 
-    const exportLayout = () => {
+    const exportLayout = async () => {
+      let backgroundImage = ''
+      const blob = await getBackground()
+      if (blob) {
+        try { backgroundImage = await blobToDataURL(blob) } catch (e) { /* 忽略 */ }
+      }
       const data = {
         top: JSON.parse(JSON.stringify(topModules.value)),
         left: JSON.parse(JSON.stringify(leftModules.value)),
         right: JSON.parse(JSON.stringify(rightModules.value)),
-        backgroundImage: backgroundImage.value,
+        backgroundImage,
+        backgroundSettings: JSON.parse(JSON.stringify(backgroundSettings)),
         moduleConfigs: JSON.parse(JSON.stringify(moduleConfigs))
       }
       const json = JSON.stringify(data, null, 2)
-      const blob = new Blob([json], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
+      const jsonBlob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(jsonBlob)
       const a = document.createElement('a')
       a.href = url
       a.download = 'bookmarks-layout.json'
@@ -242,7 +273,13 @@ export default {
           if (isInstanceArray(data.top)) topModules.value = data.top
           if (isInstanceArray(data.left)) leftModules.value = data.left
           if (isInstanceArray(data.right)) rightModules.value = data.right
-          if (data.backgroundImage) backgroundImage.value = data.backgroundImage
+          if (data.backgroundImage) {
+            const blob = dataURLToBlob(data.backgroundImage)
+            if (blob) selectBackground(blob)
+          }
+          if (data.backgroundSettings && typeof data.backgroundSettings === 'object') {
+            updateBackgroundSettings(data.backgroundSettings)
+          }
           if (data.moduleConfigs) {
             Object.assign(moduleConfigs, data.moduleConfigs)
             saveModuleConfigs()
@@ -336,9 +373,35 @@ export default {
       saveLayoutSettings()
     }
 
-    const updateBackgroundImage = (value) => {
-      backgroundImage.value = value
-      saveBackgroundImage()
+    const applyBackgroundBlob = (blob) => {
+      if (backgroundUrl.value) URL.revokeObjectURL(backgroundUrl.value)
+      backgroundUrl.value = URL.createObjectURL(blob)
+      backgroundType.value = blob.type.startsWith('video') ? 'video' : 'image'
+    }
+
+    const selectBackground = async (file) => {
+      if (!file) return
+      applyBackgroundBlob(file)
+      try {
+        await putBackground(file)
+        backgroundSaveError.value = ''
+      } catch (e) {
+        console.error('背景图保存失败:', e)
+        backgroundSaveError.value = '背景图保存失败（已显示但不会持久化）'
+      }
+    }
+
+    const clearBackgroundImage = () => {
+      if (backgroundUrl.value) URL.revokeObjectURL(backgroundUrl.value)
+      backgroundUrl.value = ''
+      backgroundType.value = ''
+      backgroundSaveError.value = ''
+      clearBackground()
+    }
+
+    const updateBackgroundSettings = (partial) => {
+      Object.assign(backgroundSettings, partial)
+      localStorage.setItem('backgroundSettings', JSON.stringify(backgroundSettings))
     }
 
     let darkMql = null
@@ -399,13 +462,32 @@ export default {
       localStorage.setItem('clockSettings', JSON.stringify(clockSettings))
     }
 
-    watch(backgroundImage, (newVal) => {
+    watch(backgroundUrl, (newVal) => {
       if (newVal) {
         document.body.classList.add('has-page-background')
       } else {
         document.body.classList.remove('has-page-background')
       }
     })
+
+    // 从 IndexedDB 加载背景;迁移旧的 localStorage.backgroundImage(base64)
+    const loadBackground = async () => {
+      try {
+        const bs = JSON.parse(localStorage.getItem('backgroundSettings') || '{}')
+        if (bs && typeof bs === 'object') Object.assign(backgroundSettings, bs)
+      } catch (e) { /* 忽略 */ }
+
+      let blob = await getBackground()
+      if (!blob) {
+        const legacy = localStorage.getItem('backgroundImage')
+        if (legacy) {
+          blob = dataURLToBlob(legacy)
+          if (blob) { try { await putBackground(blob) } catch (e) { /* 忽略 */ } }
+          localStorage.removeItem('backgroundImage')
+        }
+      }
+      if (blob) applyBackgroundBlob(blob)
+    }
 
     const loadLayoutSettings = () => {
       const saved = localStorage.getItem('layoutSettings')
@@ -422,7 +504,6 @@ export default {
           leftModules.value = fallback.left
           rightModules.value = fallback.right
         }
-        backgroundImage.value = localStorage.getItem('backgroundImage') || ''
       } else {
         topModules.value = fallback.top
         leftModules.value = fallback.left
@@ -438,20 +519,6 @@ export default {
       }))
     }
 
-    const saveBackgroundImage = () => {
-      if (backgroundImage.value) {
-        try {
-          localStorage.setItem('backgroundImage', backgroundImage.value)
-          backgroundSaveError.value = ''
-        } catch (e) {
-          console.error('背景图保存失败，文件可能过大:', e)
-          backgroundSaveError.value = '背景图保存失败，文件可能过大（已显示但不会持久化）'
-        }
-      } else {
-        localStorage.removeItem('backgroundImage')
-        backgroundSaveError.value = ''
-      }
-    }
 
     const loadModuleConfigs = () => {
       const saved = localStorage.getItem('moduleConfigs')
@@ -544,9 +611,7 @@ export default {
         if (savedClock && typeof savedClock === 'object') Object.assign(clockSettings, savedClock)
       } catch (e) { /* 忽略损坏的时钟配置 */ }
       loadLayoutSettings()
-      if (backgroundImage.value) {
-        document.body.classList.add('has-page-background')
-      }
+      loadBackground()
       loadModuleConfigs()
       loadBookmarks()
     })
@@ -561,7 +626,11 @@ export default {
       topModules,
       leftModules,
       rightModules,
-      backgroundImage,
+      backgroundUrl,
+      backgroundType,
+      backgroundSettings,
+      bgStyle,
+      videoStyle,
       importError,
       backgroundSaveError,
       theme,
@@ -583,7 +652,9 @@ export default {
       closeConfig,
       updateConfig,
       resetLayout,
-      updateBackgroundImage,
+      selectBackground,
+      clearBackgroundImage,
+      updateBackgroundSettings,
       toggleTheme,
       themeMode,
       themeSchedule,
