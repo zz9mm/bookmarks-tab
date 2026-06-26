@@ -59,7 +59,7 @@
       @file-import="handleFileImport"
       @add-module="addModule"
       @remove-module="removeModule"
-      @move-module="moveModule"
+      @reorder-module="reorderModule"
       @open-config="openConfig"
       @close-config="closeConfig"
       @update-config="updateConfig"
@@ -279,23 +279,23 @@ export default {
       saveModuleConfigs()
     }
 
-    const moveModule = (id, direction) => {
-      const find = (arr) => arr.findIndex(m => m.id === id)
-      const topIdx = find(topModules.value)
-      const leftIdx = find(leftModules.value)
-      const rightIdx = find(rightModules.value)
-
-      let arr, idx
-      if (topIdx >= 0) { arr = topModules.value; idx = topIdx }
-      else if (leftIdx >= 0) { arr = leftModules.value; idx = leftIdx }
-      else if (rightIdx >= 0) { arr = rightModules.value; idx = rightIdx }
-      else return
-
-      const newIndex = idx + direction
-      if (newIndex < 0 || newIndex >= arr.length) return
-      const temp = arr[idx]
-      arr[idx] = arr[newIndex]
-      arr[newIndex] = temp
+    // 拖拽排序:把模块移到目标区域的指定位置(支持同区重排与跨区移动)
+    const reorderModule = (id, toSide, toIndex) => {
+      const arrays = { top: topModules, left: leftModules, right: rightModules }
+      const dst = arrays[toSide]
+      if (!dst) return
+      let srcArr = null
+      let srcIdx = -1
+      for (const key of ['top', 'left', 'right']) {
+        const i = arrays[key].value.findIndex(m => m.id === id)
+        if (i >= 0) { srcArr = arrays[key]; srcIdx = i; break }
+      }
+      if (!srcArr) return
+      const [moved] = srcArr.value.splice(srcIdx, 1)
+      let idx = toIndex
+      if (idx < 0) idx = 0
+      if (idx > dst.value.length) idx = dst.value.length
+      dst.value.splice(idx, 0, moved)
       saveLayoutSettings()
     }
 
@@ -567,7 +567,7 @@ export default {
       getModuleConfig,
       addModule,
       removeModule,
-      moveModule,
+      reorderModule,
       openConfig,
       closeConfig,
       updateConfig,

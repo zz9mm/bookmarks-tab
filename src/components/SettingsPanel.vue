@@ -128,23 +128,30 @@
         <span class="accordion-title">{{ sideLabel(side) }}</span>
         <span class="accordion-count">{{ modules.length }}</span>
       </button>
-      <div v-show="expanded[side]" class="module-list">
+      <div v-show="expanded[side]" class="module-list" @dragover.prevent @drop="onListDrop(side, $event)">
         <div
           v-for="(module, index) in modules"
           :key="module.id"
           class="module-item"
-          :class="{ 'module-item-active': showConfigPanel && module.id === editingId }"
+          :class="{
+            'module-item-active': showConfigPanel && module.id === editingId,
+            'mod-dragging': dragId === module.id,
+            'mod-drag-over': overKey === `${side}:${index}` && dragId && dragId !== module.id
+          }"
+          draggable="true"
+          @dragstart="onItemDragStart(module.id, $event)"
+          @dragover="onItemDragOver(side, index, $event)"
+          @drop.stop="onItemDrop(side, index, $event)"
+          @dragend="resetItemDrag"
         >
+          <span class="module-grip" title="拖拽排序">⠿</span>
           <div class="module-label">
             <span class="module-name">
               {{ getModuleName(module.type) }}
-              <span v-if="instanceMeta[module.id]?.total > 1" class="module-ordinal">#{{ instanceMeta[module.id].ordinal }}</span>
             </span>
             <span v-if="instanceMeta[module.id]?.detail" class="module-detail">{{ instanceMeta[module.id].detail }}</span>
           </div>
           <div class="module-actions">
-            <button class="module-move" @click="$emit('move-module', module.id, -1)" :disabled="index === 0" title="上移">↑</button>
-            <button class="module-move" @click="$emit('move-module', module.id, 1)" :disabled="index === modules.length - 1" title="下移">↓</button>
             <button v-if="hasConfig(module.type)" class="module-config" @click="$emit('open-config', module.id, module.type)" title="配置">⚙</button>
             <button class="module-remove" @click="$emit('remove-module', module.id)">×</button>
           </div>
@@ -160,7 +167,6 @@
             <span class="config-title">
               {{ getModuleName(configModuleType) }}
               <span v-if="editingMeta?.detail" class="config-title-detail">· {{ editingMeta.detail }}</span>
-              <span v-else-if="editingMeta?.total > 1" class="config-title-detail">· #{{ editingMeta.ordinal }}</span>
             </span>
             <button class="config-close" @click="$emit('close-config')">&times;</button>
           </div>
@@ -235,7 +241,7 @@ const emit = defineEmits<{
   (e: 'file-import', event: Event): void
   (e: 'add-module', type: string, side: 'top' | 'left' | 'right'): void
   (e: 'remove-module', id: string): void
-  (e: 'move-module', id: string, direction: number): void
+  (e: 'reorder-module', id: string, toSide: string, toIndex: number): void
   (e: 'open-config', id: string, type: string): void
   (e: 'close-config'): void
   (e: 'update-config', id: string, config: ModuleConfig): void
@@ -313,26 +319,21 @@ const engineLabels: Record<string, string> = {
   google: 'Google'
 }
 
-// 为每个模块实例生成区分信息：同类型的序号 + 可识别的配置内容
+// 为每个模块实例生成可识别的配置内容(用于在列表里区分同类型模块)
 const instanceMeta = computed(() => {
   const all = [
     ...(props.topModules || []),
     ...(props.leftModules || []),
     ...(props.rightModules || [])
   ]
-  const counts: Record<string, number> = {}
-  const totals: Record<string, number> = {}
-  for (const m of all) totals[m.type] = (totals[m.type] || 0) + 1
-
-  const meta: Record<string, { ordinal: number; total: number; detail: string }> = {}
+  const meta: Record<string, { detail: string }> = {}
   for (const m of all) {
-    counts[m.type] = (counts[m.type] || 0) + 1
     const cfg = props.moduleConfigs?.[m.id] || {}
     let detail = ''
     if (m.type === 'title') detail = String(cfg.text ?? '').trim()
     else if (m.type === 'quick-access') detail = String(cfg.folderName ?? '').trim()
     else if (m.type === 'web-search') detail = engineLabels[String(cfg.engine ?? '')] || ''
-    meta[m.id] = { ordinal: counts[m.type], total: totals[m.type], detail }
+    meta[m.id] = { detail }
   }
   return meta
 })
@@ -364,6 +365,44 @@ const expanded = reactive<Record<string, boolean>>({
   right: true
 })
 const toggle = (key: string) => { expanded[key] = !expanded[key] }
+
+// 模块列表拖拽排序(支持同区重排与跨区移动)
+const dragId = ref('')
+const overKey = ref('')
+
+const onItemDragStart = (id: string, e: DragEvent) => {
+  dragId.value = id
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+  }
+}
+
+const onItemDragOver = (side: string, index: number, e: DragEvent) => {
+  e.preventDefault()
+  overKey.value = `${side}:${index}`
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+}
+
+const resetItemDrag = () => {
+  dragId.value = ''
+  overKey.value = ''
+}
+
+const onItemDrop = (side: string, index: number, e: DragEvent) => {
+  e.preventDefault()
+  const id = dragId.value
+  resetItemDrag()
+  if (id) emit('reorder-module', id, side, index)
+}
+
+// 落到区域列表空白处:追加到该区末尾
+const onListDrop = (side: string, e: DragEvent) => {
+  e.preventDefault()
+  const id = dragId.value
+  resetItemDrag()
+  if (id) emit('reorder-module', id, side, sideModules.value[side as 'top' | 'left' | 'right'].length)
+}
 
 const editingConfig = computed(() => props.editingConfig || {})
 
@@ -445,6 +484,30 @@ const confirmReset = () => {
   margin: 0 16px 14px;
 }
 
+/* 模块列表拖拽 */
+.module-item {
+  cursor: grab;
+}
+
+.module-grip {
+  flex-shrink: 0;
+  margin-right: 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+}
+
+.mod-dragging {
+  opacity: 0.4;
+}
+
+.mod-drag-over {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+}
+
 .background-preview {
   width: 100%;
   height: 120px;
@@ -487,17 +550,6 @@ const confirmReset = () => {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.module-ordinal {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 0 5px;
-  line-height: 16px;
 }
 
 .module-detail {

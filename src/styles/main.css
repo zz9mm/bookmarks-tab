@@ -305,7 +305,6 @@ button {
 }
 
 .module-add-btn,
-.module-move,
 .module-config,
 .module-remove {
   display: inline-flex;
@@ -324,7 +323,6 @@ button {
 }
 
 .module-add-btn:hover,
-.module-move:hover:not(:disabled),
 .module-config:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
@@ -333,11 +331,6 @@ button {
 .module-remove:hover {
   background: var(--color-danger-bg);
   color: var(--color-danger);
-}
-
-.module-move:disabled {
-  color: #cbd5e1;
-  cursor: not-allowed;
 }
 
 .module-list {
