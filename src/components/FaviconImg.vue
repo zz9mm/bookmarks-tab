@@ -1,11 +1,11 @@
 <template>
-  <img v-if="!failed" class="favicon-img" :src="currentSrc" @error="handleError" alt="" />
+  <img v-if="currentSrc && !failed" class="favicon-img" :src="currentSrc" @error="handleError" alt="" />
   <slot v-else />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { getFavicon, getFaviconFallback } from '../composables/useFavicon'
+import { ref, watch } from 'vue'
+import { resolveFavicon } from '../composables/useFaviconCache'
 
 defineOptions({ inheritAttrs: false })
 
@@ -14,19 +14,22 @@ const props = defineProps<{
   size?: number
 }>()
 
-const stage = ref<'primary' | 'fallback'>('primary')
+const currentSrc = ref('')
 const failed = ref(false)
-const currentSrc = ref(getFavicon(props.url, props.size))
+
+const load = async (url: string) => {
+  failed.value = false
+  currentSrc.value = ''
+  const src = await resolveFavicon(url)
+  // 异步期间 url 可能已变,丢弃过期结果
+  if (url !== props.url) return
+  if (src) currentSrc.value = src
+  else failed.value = true
+}
+
+watch(() => props.url, load, { immediate: true })
 
 const handleError = () => {
-  if (stage.value === 'primary') {
-    const fallback = getFaviconFallback(props.url)
-    if (fallback) {
-      stage.value = 'fallback'
-      currentSrc.value = fallback
-      return
-    }
-  }
   failed.value = true
 }
 </script>
