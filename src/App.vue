@@ -14,6 +14,16 @@
     </video>
     <div v-else-if="backgroundImage" class="page-background" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
 
+    <!-- Theme Toggle Button -->
+    <button class="theme-btn" @click.stop="toggleTheme" :aria-label="theme === 'dark' ? '切换到浅色' : '切换到深色'">
+      <svg v-if="theme === 'dark'" viewBox="0 0 24 24" width="20" height="20">
+        <path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 16a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM4.22 5.64a1 1 0 011.42 0l1.42 1.42a1 1 0 11-1.42 1.42L4.22 7.05a1 1 0 010-1.41zm12.72 12.72a1 1 0 011.42 0l1.42 1.41a1 1 0 11-1.42 1.42l-1.42-1.42a1 1 0 010-1.41zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm17 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM5.64 19.78a1 1 0 010-1.42l1.42-1.42a1 1 0 111.42 1.42l-1.42 1.42a1 1 0 01-1.42 0zM18.36 5.64a1 1 0 010 1.42l-1.42 1.42a1 1 0 11-1.42-1.42l1.42-1.42a1 1 0 011.42 0z"/>
+      </svg>
+      <svg v-else viewBox="0 0 24 24" width="20" height="20">
+        <path d="M21.64 13a1 1 0 00-1.05-.14 8.05 8.05 0 01-3.37.73 8.15 8.15 0 01-8.14-8.1 8.59 8.59 0 01.25-2A1 1 0 008 2.36a10.14 10.14 0 1014 11.69 1 1 0 00-.36-1.05z"/>
+      </svg>
+    </button>
+
     <!-- Settings Button -->
     <button class="settings-btn" @click.stop="toggleSettings" aria-label="设置">
       <svg viewBox="0 0 24 24" width="22" height="22">
@@ -146,6 +156,7 @@ export default {
     const importError = ref('')
     const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
+    const theme = ref('light')
 
     const isVideo = computed(() => {
       return backgroundImage.value && backgroundImage.value.startsWith('data:video/')
@@ -300,6 +311,15 @@ export default {
       saveBackgroundImage()
     }
 
+    const toggleTheme = () => {
+      theme.value = theme.value === 'dark' ? 'light' : 'dark'
+    }
+
+    watch(theme, (newVal) => {
+      document.body.classList.toggle('dark', newVal === 'dark')
+      localStorage.setItem('theme', newVal)
+    })
+
     watch(backgroundImage, (newVal) => {
       if (newVal) {
         document.body.classList.add('has-page-background')
@@ -424,6 +444,9 @@ export default {
     }
 
     onMounted(() => {
+      const savedTheme = localStorage.getItem('theme')
+      theme.value = savedTheme === 'dark' ? 'dark' : 'light'
+      document.body.classList.toggle('dark', theme.value === 'dark')
       loadLayoutSettings()
       if (backgroundImage.value) {
         document.body.classList.add('has-page-background')
@@ -445,6 +468,7 @@ export default {
       backgroundImage,
       importError,
       backgroundSaveError,
+      theme,
       isVideo,
       bgVideoRef,
       handleVideoTimeUpdate,
@@ -463,7 +487,8 @@ export default {
       closeConfig,
       updateConfig,
       resetLayout,
-      updateBackgroundImage
+      updateBackgroundImage,
+      toggleTheme
     }
   }
 }

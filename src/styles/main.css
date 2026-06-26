@@ -19,6 +19,37 @@
   --color-info: #2563eb;
   --color-info-light: #1d4ed8;
   --shadow-popover: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --surface-glass: rgba(255, 255, 255, 0.92);
+  --surface-glass-strong: #ffffff;
+  --surface-panel: rgba(255, 255, 255, 0.96);
+  --surface-module: rgba(255, 255, 255, 0.72);
+  --module-border: rgba(209, 213, 219, 0.75);
+  --page-gradient: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+}
+
+body.dark {
+  --color-primary: #2dd4bf;
+  --color-primary-light: #5eead4;
+  --color-primary-dark: #99f6e4;
+  --color-accent: #60a5fa;
+  --color-text: #e5e7eb;
+  --color-text-muted: #94a3b8;
+  --color-border: #2b3340;
+  --color-border-strong: #3b4452;
+  --color-surface: #1b2230;
+  --color-surface-muted: #161b27;
+  --color-surface-hover: #232b3a;
+  --color-danger: #f87171;
+  --color-danger-bg: #3a1d1d;
+  --color-info: #60a5fa;
+  --color-info-light: #93c5fd;
+  --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --surface-glass: rgba(27, 34, 48, 0.85);
+  --surface-glass-strong: #232b3a;
+  --surface-panel: rgba(22, 27, 39, 0.96);
+  --surface-module: rgba(27, 34, 48, 0.72);
+  --module-border: rgba(59, 68, 82, 0.75);
+  --page-gradient: linear-gradient(180deg, #0f1420 0%, #161b27 100%);
 }
 
 * {
@@ -34,7 +65,7 @@ html {
 body {
   min-height: 100vh;
   color: var(--color-text);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+  background: var(--page-gradient);
   font-family: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
   line-height: 1.5;
 }
@@ -69,6 +100,38 @@ button {
   outline: none;
 }
 
+.theme-btn {
+  position: fixed;
+  top: 24px;
+  right: 72px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--surface-glass) !important;
+  color: var(--color-text);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  z-index: 9999 !important;
+  backdrop-filter: blur(12px);
+}
+
+.theme-btn:hover {
+  background: var(--surface-glass-strong) !important;
+  border-color: var(--color-border-strong);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.theme-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 .settings-btn {
   position: fixed;
   top: 24px;
@@ -77,7 +140,7 @@ button {
   height: 36px;
   border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92) !important;
+  background: var(--surface-glass) !important;
   color: var(--color-text);
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
   cursor: pointer !important;
@@ -90,7 +153,7 @@ button {
 }
 
 .settings-btn:hover {
-  background: #fff !important;
+  background: var(--surface-glass-strong) !important;
   border-color: var(--color-border-strong);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
 }
@@ -110,7 +173,7 @@ button {
   max-height: calc(100vh - 84px);
   overflow-y: auto;
   z-index: 9999;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--surface-panel);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: var(--shadow-popover);
@@ -156,7 +219,7 @@ button {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--surface-panel);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -487,8 +550,8 @@ button {
 }
 
 .module-box {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(209, 213, 219, 0.75);
+  background: var(--surface-module);
+  border: 1px solid var(--module-border);
   border-radius: 6px;
   box-shadow: none;
   overflow: hidden;
@@ -692,7 +755,7 @@ button {
 .sidebar-header {
   padding: 10px 12px;
   border-bottom: 1px solid var(--color-border);
-  background: rgba(247, 248, 250, 0.9);
+  background: var(--color-surface-muted);
 }
 
 .sidebar-header {
@@ -916,6 +979,11 @@ body::-webkit-scrollbar-thumb,
   .settings-btn {
     top: 12px;
     right: 12px;
+  }
+
+  .theme-btn {
+    top: 12px;
+    right: 56px;
   }
 
   .settings-panel {
