@@ -232,11 +232,13 @@ interface BackgroundSettings {
 const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
+const TodoConfig = defineAsyncComponent(() => import('../modules/todo/config.vue'))
 
 const configComponents: Record<string, any> = {
   'web-search': WebSearchConfig,
   'quick-access': QuickAccessConfig,
-  'title': TitleConfig
+  'title': TitleConfig,
+  'todo': TodoConfig
 }
 
 const props = defineProps<{
@@ -350,6 +352,7 @@ const instanceMeta = computed(() => {
     if (m.type === 'title') detail = String(cfg.text ?? '').trim()
     else if (m.type === 'quick-access') detail = String(cfg.folderName ?? '').trim()
     else if (m.type === 'web-search') detail = engineLabels[String(cfg.engine ?? '')] || ''
+    else if (m.type === 'todo') detail = String(cfg.title ?? '').trim()
     meta[m.id] = { detail }
   }
   return meta
