@@ -11,7 +11,10 @@
       <select :value="layoutValue" @change="onLayoutChange(($event.target as HTMLSelectElement).value)">
         <option v-for="opt in layouts" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
-      <div class="layout-hint">共显示 {{ cols * rows }} 个书签，多余部分会隐藏</div>
+      <div class="layout-hint">
+        <template v-if="config?.folderId">镜像所选文件夹，最多显示 {{ cols * rows }} 个；页面上添加/删除/拖拽排序会写入该文件夹的真实书签</template>
+        <template v-else>{{ cols }} 列布局；自定义列表，可在页面上添加、拖拽排序、删除</template>
+      </div>
     </div>
 
     <teleport to="body">
