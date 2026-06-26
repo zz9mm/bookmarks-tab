@@ -1,80 +1,95 @@
 <template>
   <div class="settings-panel" @click.stop role="dialog" aria-modal="true" aria-label="设置面板">
     <!-- 背景图设置 -->
-    <div class="settings-section">
-      <div class="settings-subtitle">页面背景图</div>
-      <div class="config-item">
-        <input type="file" accept="image/*,.webm" @change="handleBackgroundImageSelect" ref="backgroundImageInput">
-        <div v-if="backgroundError" class="inline-error">{{ backgroundError }}</div>
-      </div>
-      <div v-if="backgroundSaveError" class="inline-error">{{ backgroundSaveError }}</div>
-      <div v-if="backgroundImage" class="config-item">
-        <video v-if="isBackgroundVideo" class="background-preview" autoplay muted playsinline @timeupdate="handlePreviewVideoTimeUpdate" ref="previewVideoRef">
-          <source :src="backgroundImage" type="video/webm">
-        </video>
-        <div v-else class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
-        <button class="clear-background-btn" @click="clearBackgroundImage">清除背景图</button>
+    <div class="settings-section accordion">
+      <button type="button" class="accordion-header" @click="toggle('background')" :aria-expanded="expanded.background">
+        <span class="accordion-arrow" :class="{ open: expanded.background }">▸</span>
+        <span class="accordion-title">页面背景图</span>
+      </button>
+      <div v-show="expanded.background" class="accordion-body">
+        <div class="config-item">
+          <input type="file" accept="image/*,.webm" @change="handleBackgroundImageSelect" ref="backgroundImageInput">
+          <div v-if="backgroundError" class="inline-error">{{ backgroundError }}</div>
+        </div>
+        <div v-if="backgroundSaveError" class="inline-error">{{ backgroundSaveError }}</div>
+        <div v-if="backgroundImage" class="config-item">
+          <video v-if="isBackgroundVideo" class="background-preview" autoplay muted playsinline @timeupdate="handlePreviewVideoTimeUpdate" ref="previewVideoRef">
+            <source :src="backgroundImage" type="video/webm">
+          </video>
+          <div v-else class="background-preview" :style="`background-image: url(${backgroundImage})`"></div>
+          <button class="clear-background-btn" @click="clearBackgroundImage">清除背景图</button>
+        </div>
       </div>
     </div>
 
     <!-- 主题设置 -->
-    <div class="settings-section">
-      <div class="settings-subtitle">主题</div>
-      <div class="config-item">
-        <label>主题模式</label>
-        <select :value="themeMode || 'light'" @change="emit('update-theme-mode', ($event.target as HTMLSelectElement).value)">
-          <option value="light">浅色</option>
-          <option value="dark">深色</option>
-          <option value="auto">跟随系统</option>
-          <option value="schedule">定时切换</option>
-        </select>
+    <div class="settings-section accordion">
+      <button type="button" class="accordion-header" @click="toggle('theme')" :aria-expanded="expanded.theme">
+        <span class="accordion-arrow" :class="{ open: expanded.theme }">▸</span>
+        <span class="accordion-title">主题</span>
+      </button>
+      <div v-show="expanded.theme" class="accordion-body">
+        <div class="config-item">
+          <label>主题模式</label>
+          <select :value="themeMode || 'light'" @change="emit('update-theme-mode', ($event.target as HTMLSelectElement).value)">
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+            <option value="auto">跟随系统</option>
+            <option value="schedule">定时切换</option>
+          </select>
+        </div>
+        <template v-if="themeMode === 'schedule'">
+          <div class="config-item">
+            <label>深色开始</label>
+            <input type="time" :value="themeSchedule?.darkStart || '18:00'" @change="emit('update-theme-schedule', { darkStart: ($event.target as HTMLInputElement).value })">
+          </div>
+          <div class="config-item">
+            <label>深色结束</label>
+            <input type="time" :value="themeSchedule?.darkEnd || '06:00'" @change="emit('update-theme-schedule', { darkEnd: ($event.target as HTMLInputElement).value })">
+          </div>
+        </template>
       </div>
-      <template v-if="themeMode === 'schedule'">
-        <div class="config-item">
-          <label>深色开始</label>
-          <input type="time" :value="themeSchedule?.darkStart || '18:00'" @change="emit('update-theme-schedule', { darkStart: ($event.target as HTMLInputElement).value })">
-        </div>
-        <div class="config-item">
-          <label>深色结束</label>
-          <input type="time" :value="themeSchedule?.darkEnd || '06:00'" @change="emit('update-theme-schedule', { darkEnd: ($event.target as HTMLInputElement).value })">
-        </div>
-      </template>
     </div>
 
     <!-- 时钟设置 -->
-    <div class="settings-section">
-      <div class="settings-subtitle">时钟</div>
-      <div class="config-item">
-        <label>显示时钟</label>
-        <select :value="(clockSettings?.show ?? true) ? '1' : '0'" @change="emit('update-clock', { show: ($event.target as HTMLSelectElement).value === '1' })">
-          <option value="1">显示</option>
-          <option value="0">隐藏</option>
-        </select>
-      </div>
-      <template v-if="clockSettings?.show ?? true">
+    <div class="settings-section accordion">
+      <button type="button" class="accordion-header" @click="toggle('clock')" :aria-expanded="expanded.clock">
+        <span class="accordion-arrow" :class="{ open: expanded.clock }">▸</span>
+        <span class="accordion-title">时钟</span>
+      </button>
+      <div v-show="expanded.clock" class="accordion-body">
         <div class="config-item">
-          <label>样式</label>
-          <select :value="clockSettings?.style || 'stacked'" @change="emit('update-clock', { style: ($event.target as HTMLSelectElement).value })">
-            <option value="minimal">简约（纯时间）</option>
-            <option value="stacked">时间 + 日期</option>
-            <option value="card">玻璃卡片</option>
-          </select>
-        </div>
-        <div class="config-item">
-          <label>时间格式</label>
-          <select :value="(clockSettings?.hour12) ? '12' : '24'" @change="emit('update-clock', { hour12: ($event.target as HTMLSelectElement).value === '12' })">
-            <option value="24">24 小时制</option>
-            <option value="12">12 小时制</option>
-          </select>
-        </div>
-        <div class="config-item">
-          <label>显示秒</label>
-          <select :value="(clockSettings?.showSeconds ?? true) ? '1' : '0'" @change="emit('update-clock', { showSeconds: ($event.target as HTMLSelectElement).value === '1' })">
+          <label>显示时钟</label>
+          <select :value="(clockSettings?.show ?? true) ? '1' : '0'" @change="emit('update-clock', { show: ($event.target as HTMLSelectElement).value === '1' })">
             <option value="1">显示</option>
             <option value="0">隐藏</option>
           </select>
         </div>
-      </template>
+        <template v-if="clockSettings?.show ?? true">
+          <div class="config-item">
+            <label>样式</label>
+            <select :value="clockSettings?.style || 'stacked'" @change="emit('update-clock', { style: ($event.target as HTMLSelectElement).value })">
+              <option value="minimal">简约（纯时间）</option>
+              <option value="stacked">时间 + 日期</option>
+              <option value="card">玻璃卡片</option>
+            </select>
+          </div>
+          <div class="config-item">
+            <label>时间格式</label>
+            <select :value="(clockSettings?.hour12) ? '12' : '24'" @change="emit('update-clock', { hour12: ($event.target as HTMLSelectElement).value === '12' })">
+              <option value="24">24 小时制</option>
+              <option value="12">12 小时制</option>
+            </select>
+          </div>
+          <div class="config-item">
+            <label>显示秒</label>
+            <select :value="(clockSettings?.showSeconds ?? true) ? '1' : '0'" @change="emit('update-clock', { showSeconds: ($event.target as HTMLSelectElement).value === '1' })">
+              <option value="1">显示</option>
+              <option value="0">隐藏</option>
+            </select>
+          </div>
+        </template>
+      </div>
     </div>
 
     <div class="settings-header">
@@ -86,23 +101,34 @@
       <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
       <div v-if="importError" class="inline-error" style="padding: 0 20px 8px">{{ importError }}</div>
     </div>
-    <div class="settings-section">
-      <div class="settings-subtitle">可用模块</div>
-      <div class="module-palette">
-        <div v-for="module in availableModules" :key="module.type" class="module-item">
-          <span>{{ module.name }}</span>
-          <div>
-            <button class="module-add-btn" @click="$emit('add-module', module.type, 'top')" title="添加到顶部">↑</button>
-            <button class="module-add-btn" @click="$emit('add-module', module.type, 'left')" title="添加到左侧">←</button>
-            <button class="module-add-btn" @click="$emit('add-module', module.type, 'right')" title="添加到右侧">→</button>
+
+    <!-- 可用模块 -->
+    <div class="settings-section accordion">
+      <button type="button" class="accordion-header" @click="toggle('palette')" :aria-expanded="expanded.palette">
+        <span class="accordion-arrow" :class="{ open: expanded.palette }">▸</span>
+        <span class="accordion-title">可用模块</span>
+      </button>
+      <div v-show="expanded.palette" class="accordion-body">
+        <div class="module-palette">
+          <div v-for="module in availableModules" :key="module.type" class="module-item">
+            <span>{{ module.name }}</span>
+            <div>
+              <button class="module-add-btn" @click="$emit('add-module', module.type, 'top')" title="添加到顶部">↑</button>
+              <button class="module-add-btn" @click="$emit('add-module', module.type, 'left')" title="添加到左侧">←</button>
+              <button class="module-add-btn" @click="$emit('add-module', module.type, 'right')" title="添加到右侧">→</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="settings-section" v-for="(modules, side) in sideModules" :key="side">
-      <div class="settings-subtitle">{{ sideLabel(side) }}</div>
-      <div class="module-list">
+    <div class="settings-section accordion" v-for="(modules, side) in sideModules" :key="side">
+      <button type="button" class="accordion-header" @click="toggle(side)" :aria-expanded="expanded[side]">
+        <span class="accordion-arrow" :class="{ open: expanded[side] }">▸</span>
+        <span class="accordion-title">{{ sideLabel(side) }}</span>
+        <span class="accordion-count">{{ modules.length }}</span>
+      </button>
+      <div v-show="expanded[side]" class="module-list">
         <div
           v-for="(module, index) in modules"
           :key="module.id"
@@ -154,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, toRefs } from 'vue'
+import { computed, defineAsyncComponent, reactive, ref, toRefs } from 'vue'
 import { moduleList } from '../modules/types'
 import { useEscClose } from '../composables/useEscClose'
 import type { ModuleInstance, ModuleConfig } from '../modules/types'
@@ -327,6 +353,18 @@ const sideLabel = (side: string): string => {
   return '顶部模块（全宽）'
 }
 
+// 折叠区块状态:外观类默认收起,区域模块默认展开
+const expanded = reactive<Record<string, boolean>>({
+  background: false,
+  theme: false,
+  clock: false,
+  palette: false,
+  top: true,
+  left: true,
+  right: true
+})
+const toggle = (key: string) => { expanded[key] = !expanded[key] }
+
 const editingConfig = computed(() => props.editingConfig || {})
 
 const handleFileImport = (event: Event) => {
@@ -347,6 +385,66 @@ const confirmReset = () => {
 </script>
 
 <style scoped>
+/* 折叠区块 */
+.settings-section.accordion {
+  padding: 0;
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  transition: background 0.12s;
+}
+
+.accordion-header:hover {
+  background: var(--color-surface-hover);
+}
+
+.accordion-arrow {
+  flex-shrink: 0;
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+
+.accordion-arrow.open {
+  transform: rotate(90deg);
+}
+
+.accordion-title {
+  flex: 1;
+}
+
+.accordion-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.accordion-body {
+  padding: 0 16px 14px;
+}
+
+.settings-section.accordion .module-list {
+  margin: 0 16px 14px;
+}
+
 .background-preview {
   width: 100%;
   height: 120px;
