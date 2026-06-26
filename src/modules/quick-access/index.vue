@@ -12,7 +12,7 @@
       </h2>
 
       <!-- 自定义模式:可拖拽排序 + 增删 -->
-      <div v-if="isCustomMode" class="quick-access-grid-container">
+      <div v-if="isCustomMode" class="quick-access-grid-container" @dragover="onContainerDragOver" @drop="onContainerDrop">
         <div v-if="customItems.length > 0" class="quick-access-grid" :style="gridStyle">
           <a
             v-for="(item, index) in customItems"
@@ -24,7 +24,7 @@
             draggable="true"
             @dragstart="onDragStart(index, $event)"
             @dragover="onDragOver(index, $event)"
-            @drop="onDrop(index, $event)"
+            @drop.stop="onDrop(index, $event)"
             @dragend="onDragEnd"
           >
             <button class="qa-delete-btn" title="删除" @click.prevent.stop="removeItem(index)">×</button>
@@ -41,8 +41,8 @@
         <div v-else class="empty-state">暂无快速访问，点击右上角 + 添加</div>
       </div>
 
-      <!-- 文件夹模式:只读镜像 -->
-      <div v-else-if="displayedBookmarks.length > 0" class="quick-access-grid-container">
+      <!-- 文件夹模式:镜像真实文件夹 -->
+      <div v-else-if="displayedBookmarks.length > 0" class="quick-access-grid-container" @dragover="onContainerDragOver" @drop="onContainerDrop">
         <div class="quick-access-grid" :style="gridStyle">
           <a
             v-for="(bookmark, index) in displayedBookmarks"
@@ -54,7 +54,7 @@
             draggable="true"
             @dragstart="onDragStart(index, $event)"
             @dragover="onDragOver(index, $event)"
-            @drop="onDrop(index, $event)"
+            @drop.stop="onDrop(index, $event)"
             @dragend="onDragEnd"
           >
             <button class="qa-delete-btn" title="删除" @click.prevent.stop="removeFolderBookmark(bookmark)">×</button>
@@ -72,7 +72,7 @@
           还有 {{ hiddenCount }} 个书签未显示
         </div>
       </div>
-      <div v-else class="empty-state">暂无书签</div>
+      <div v-else class="empty-state" @dragover="onContainerDragOver" @drop="onContainerDrop">暂无书签</div>
     </div>
 
     <!-- 添加弹窗 -->
@@ -117,9 +117,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { getDomain } from '../../composables/useFavicon'
 import { useEscClose } from '../../composables/useEscClose'
+import {
+  nextQaUid, registerQaSource, unregisterQaSource,
+  beginQaDrag, endQaDrag, getQaActive, getQaSource
+} from '../../composables/useQuickAccessDnd'
 import FaviconImg from '../../components/FaviconImg.vue'
 import type { ModuleConfig } from '../types'
 
@@ -199,12 +203,37 @@ const gridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`
 }))
 
-// ===== 拖拽排序 =====
+// ===== 拖拽排序(模块内 + 跨模块) =====
+const uid = nextQaUid()
 const dragIndex = ref(-1)
 const overIndex = ref(-1)
 
+onMounted(() => {
+  registerQaSource(uid, {
+    mode: () => (isCustomMode.value ? 'custom' : 'folder'),
+    itemAt: (i) => {
+      if (isCustomMode.value) {
+        const it = customItems.value[i]
+        return it ? { title: it.title, url: it.url, bookmarkId: it.bookmarkId } : null
+      }
+      const b = folderBookmarks.value[i]
+      return b ? { title: b.title, url: b.url, bookmarkId: b.id } : null
+    },
+    detach: (i) => {
+      // 自定义模式:真正移除(移动语义);文件夹模式:保留真实书签(复制语义)
+      if (!isCustomMode.value) return
+      const arr = [...customItems.value]
+      arr.splice(i, 1)
+      persistItems(arr)
+    }
+  })
+})
+
+onUnmounted(() => unregisterQaSource(uid))
+
 const onDragStart = (index: number, e: DragEvent) => {
   dragIndex.value = index
+  beginQaDrag(uid, index)
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(index))
@@ -217,29 +246,71 @@ const onDragOver = (index: number, e: DragEvent) => {
   if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
 }
 
-const onDrop = (index: number, e: DragEvent) => {
-  e.preventDefault()
-  const from = dragIndex.value
-  onDragEnd()
-  if (from < 0 || from === index) return
+const resetDrag = () => {
+  dragIndex.value = -1
+  overIndex.value = -1
+  endQaDrag()
+}
+
+const onDragEnd = resetDrag
+
+// 模块内重排
+const reorderLocal = (from: number, to: number) => {
+  if (from < 0 || from === to) return
   if (isCustomMode.value) {
-    // 自定义模式:本地列表重排
     const arr = [...customItems.value]
     const [moved] = arr.splice(from, 1)
-    arr.splice(index, 0, moved)
+    arr.splice(to, 0, moved)
     persistItems(arr)
   } else {
-    // 文件夹模式:移动真实书签顺序(向后移需 +1 修正 Chrome 同目录 move 的偏移)
     const moved = folderBookmarks.value[from]
     if (!moved || typeof chrome === 'undefined' || !chrome.bookmarks) return
-    const newIndex = from < index ? index + 1 : index
+    const newIndex = from < to ? to + 1 : to // 修正 Chrome 同目录 move 偏移
     chrome.bookmarks.move(moved.id, { parentId: folderId.value, index: newIndex }, () => loadFolder())
   }
 }
 
-const onDragEnd = () => {
-  dragIndex.value = -1
-  overIndex.value = -1
+// 跨模块:把源实例的项放进本模块 targetIndex 处,再让源实例移除
+const crossDrop = (act: { uid: number; index: number }, targetIndex: number) => {
+  const src = getQaSource(act.uid)
+  if (!src) return
+  const item = src.itemAt(act.index)
+  if (!item) return
+  if (isCustomMode.value) {
+    const arr = [...customItems.value]
+    arr.splice(targetIndex, 0, { id: makeId(), title: item.title, url: item.url, bookmarkId: item.bookmarkId })
+    persistItems(arr)
+  } else if (typeof chrome !== 'undefined' && chrome.bookmarks) {
+    // 文件夹模式目标:在该文件夹创建真实书签
+    chrome.bookmarks.create({ parentId: folderId.value, title: item.title, url: item.url }, () => loadFolder())
+  }
+  src.detach(act.index)
+}
+
+const onDrop = (index: number, e: DragEvent) => {
+  e.preventDefault()
+  const act = getQaActive()
+  resetDrag()
+  if (!act) return
+  if (act.uid === uid) reorderLocal(act.index, index)
+  else crossDrop(act, index)
+}
+
+// 落到模块空白处(网格容器):追加到末尾
+const appendIndex = () => (isCustomMode.value ? customItems.value.length : folderBookmarks.value.length)
+
+const onContainerDrop = (e: DragEvent) => {
+  e.preventDefault()
+  const act = getQaActive()
+  resetDrag()
+  if (!act) return
+  if (act.uid === uid) reorderLocal(act.index, appendIndex())
+  else crossDrop(act, appendIndex())
+}
+
+const onContainerDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
 }
 
 // ===== 删除 =====
