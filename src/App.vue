@@ -50,6 +50,10 @@
       :editing-id="editingId"
       :module-configs="moduleConfigs"
       :clock-settings="clockSettings"
+      :theme-mode="themeMode"
+      :theme-schedule="themeSchedule"
+      @update-theme-mode="setThemeMode"
+      @update-theme-schedule="updateThemeSchedule"
       @update-clock="updateClockSettings"
       @export="exportLayout"
       @file-import="handleFileImport"
@@ -164,7 +168,9 @@ export default {
     const importError = ref('')
     const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
-    const theme = ref('light')
+    const themeMode = ref('light') // light | dark | auto | schedule
+    const themeSchedule = reactive({ darkStart: '18:00', darkEnd: '06:00' })
+    const theme = ref('light') // 实际生效的主题(由 themeMode 派生)
     const clockSettings = reactive(defaultClockSettings())
 
     const isVideo = computed(() => {
@@ -320,14 +326,58 @@ export default {
       saveBackgroundImage()
     }
 
-    const toggleTheme = () => {
-      theme.value = theme.value === 'dark' ? 'light' : 'dark'
+    let darkMql = null
+    let scheduleTimer = null
+
+    const toMinutes = (hhmm) => {
+      const [h, m] = String(hhmm).split(':').map(Number)
+      return (h || 0) * 60 + (m || 0)
     }
 
-    watch(theme, (newVal) => {
-      document.body.classList.toggle('dark', newVal === 'dark')
-      localStorage.setItem('theme', newVal)
-    })
+    const computeEffectiveTheme = () => {
+      if (themeMode.value === 'dark') return 'dark'
+      if (themeMode.value === 'auto') return darkMql && darkMql.matches ? 'dark' : 'light'
+      if (themeMode.value === 'schedule') {
+        const now = new Date()
+        const cur = now.getHours() * 60 + now.getMinutes()
+        const start = toMinutes(themeSchedule.darkStart)
+        const end = toMinutes(themeSchedule.darkEnd)
+        // start <= end 同日区间;否则为跨夜区间
+        const inDark = start <= end ? cur >= start && cur < end : cur >= start || cur < end
+        return inDark ? 'dark' : 'light'
+      }
+      return 'light'
+    }
+
+    const applyTheme = () => {
+      theme.value = computeEffectiveTheme()
+      document.body.classList.toggle('dark', theme.value === 'dark')
+    }
+
+    const refreshThemeWatchers = () => {
+      if (scheduleTimer) { clearInterval(scheduleTimer); scheduleTimer = null }
+      if (themeMode.value === 'schedule') {
+        scheduleTimer = setInterval(applyTheme, 30000)
+      }
+    }
+
+    const setThemeMode = (mode) => {
+      themeMode.value = mode
+      localStorage.setItem('themeMode', mode)
+      refreshThemeWatchers()
+      applyTheme()
+    }
+
+    const updateThemeSchedule = (partial) => {
+      Object.assign(themeSchedule, partial)
+      localStorage.setItem('themeSchedule', JSON.stringify(themeSchedule))
+      applyTheme()
+    }
+
+    // 顶部按钮:在浅色/深色显式模式间快速切换
+    const toggleTheme = () => {
+      setThemeMode(theme.value === 'dark' ? 'light' : 'dark')
+    }
 
     const updateClockSettings = (partial) => {
       Object.assign(clockSettings, partial)
@@ -458,9 +508,22 @@ export default {
     }
 
     onMounted(() => {
-      const savedTheme = localStorage.getItem('theme')
-      theme.value = savedTheme === 'dark' ? 'dark' : 'light'
-      document.body.classList.toggle('dark', theme.value === 'dark')
+      // 主题模式:优先读 themeMode,回退旧的 theme 值做迁移
+      const savedMode = localStorage.getItem('themeMode')
+      const legacyTheme = localStorage.getItem('theme')
+      themeMode.value = ['light', 'dark', 'auto', 'schedule'].includes(savedMode)
+        ? savedMode
+        : (legacyTheme === 'dark' ? 'dark' : 'light')
+      try {
+        const savedSchedule = JSON.parse(localStorage.getItem('themeSchedule') || '{}')
+        if (savedSchedule && typeof savedSchedule === 'object') Object.assign(themeSchedule, savedSchedule)
+      } catch (e) { /* 忽略损坏的定时配置 */ }
+      if (typeof matchMedia !== 'undefined') {
+        darkMql = matchMedia('(prefers-color-scheme: dark)')
+        darkMql.addEventListener('change', applyTheme)
+      }
+      refreshThemeWatchers()
+      applyTheme()
       try {
         const savedClock = JSON.parse(localStorage.getItem('clockSettings') || '{}')
         if (savedClock && typeof savedClock === 'object') Object.assign(clockSettings, savedClock)
@@ -507,6 +570,10 @@ export default {
       resetLayout,
       updateBackgroundImage,
       toggleTheme,
+      themeMode,
+      themeSchedule,
+      setThemeMode,
+      updateThemeSchedule,
       clockSettings,
       updateClockSettings
     }

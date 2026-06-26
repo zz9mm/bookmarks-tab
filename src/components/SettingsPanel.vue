@@ -17,6 +17,30 @@
       </div>
     </div>
 
+    <!-- 主题设置 -->
+    <div class="settings-section">
+      <div class="settings-subtitle">主题</div>
+      <div class="config-item">
+        <label>主题模式</label>
+        <select :value="themeMode || 'light'" @change="emit('update-theme-mode', ($event.target as HTMLSelectElement).value)">
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+          <option value="auto">跟随系统</option>
+          <option value="schedule">定时切换</option>
+        </select>
+      </div>
+      <template v-if="themeMode === 'schedule'">
+        <div class="config-item">
+          <label>深色开始</label>
+          <input type="time" :value="themeSchedule?.darkStart || '18:00'" @change="emit('update-theme-schedule', { darkStart: ($event.target as HTMLInputElement).value })">
+        </div>
+        <div class="config-item">
+          <label>深色结束</label>
+          <input type="time" :value="themeSchedule?.darkEnd || '06:00'" @change="emit('update-theme-schedule', { darkEnd: ($event.target as HTMLInputElement).value })">
+        </div>
+      </template>
+    </div>
+
     <!-- 时钟设置 -->
     <div class="settings-section">
       <div class="settings-subtitle">时钟</div>
@@ -141,6 +165,11 @@ interface ClockSettings {
   showSeconds?: boolean
 }
 
+interface ThemeSchedule {
+  darkStart?: string
+  darkEnd?: string
+}
+
 const WebSearchConfig = defineAsyncComponent(() => import('../modules/web-search/config.vue'))
 const QuickAccessConfig = defineAsyncComponent(() => import('../modules/quick-access/config.vue'))
 const TitleConfig = defineAsyncComponent(() => import('../modules/title/config.vue'))
@@ -164,6 +193,8 @@ const props = defineProps<{
   editingId?: string
   moduleConfigs?: Record<string, ModuleConfig>
   clockSettings?: ClockSettings
+  themeMode?: string
+  themeSchedule?: ThemeSchedule
 }>()
 
 const { backgroundImage } = toRefs(props)
@@ -183,6 +214,8 @@ const emit = defineEmits<{
   (e: 'update-config', id: string, config: ModuleConfig): void
   (e: 'update-background-image', value: string): void
   (e: 'update-clock', partial: Partial<ClockSettings>): void
+  (e: 'update-theme-mode', mode: string): void
+  (e: 'update-theme-schedule', partial: Partial<ThemeSchedule>): void
   (e: 'reset-layout'): void
 }>()
 
