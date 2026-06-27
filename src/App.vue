@@ -48,6 +48,7 @@
       :background-type="backgroundType"
       :background-settings="backgroundSettings"
       :import-error="importError"
+      :import-success="importSuccess"
       :background-save-error="backgroundSaveError"
       :editing-config="editingConfig"
       :editing-id="editingId"
@@ -130,6 +131,7 @@ import ClockWidget from './components/ClockWidget.vue'
 import { useEscClose } from './composables/useEscClose'
 import { getBackground, putBackground, clearBackground, dataURLToBlob, blobToDataURL } from './composables/useBackgroundStore'
 import { defaultModuleConfigs } from './modules/types'
+import { storageGet, storageSet, requestPersistentStorage } from './composables/useSettingsStore'
 
 const defaultClockSettings = () => ({ show: true, style: 'stacked', hour12: false, showSeconds: true })
 
@@ -175,6 +177,7 @@ export default {
     const backgroundType = ref('')  // 'image' | 'video'
     const backgroundSettings = reactive({ fit: 'cover', position: 'center' })
     const importError = ref('')
+    const importSuccess = ref('')
     const backgroundSaveError = ref('')
     const bgVideoRef = ref(null)
     const themeMode = ref('light') // light | dark | auto | schedule
@@ -250,7 +253,10 @@ export default {
         right: JSON.parse(JSON.stringify(rightModules.value)),
         backgroundImage,
         backgroundSettings: JSON.parse(JSON.stringify(backgroundSettings)),
-        moduleConfigs: JSON.parse(JSON.stringify(moduleConfigs))
+        moduleConfigs: JSON.parse(JSON.stringify(moduleConfigs)),
+        themeMode: themeMode.value,
+        themeSchedule: JSON.parse(JSON.stringify(themeSchedule)),
+        clockSettings: JSON.parse(JSON.stringify(clockSettings))
       }
       const json = JSON.stringify(data, null, 2)
       const jsonBlob = new Blob([json], { type: 'application/json' })
@@ -265,6 +271,8 @@ export default {
     const handleFileImport = (event) => {
       const file = event.target.files[0]
       if (!file) return
+      importError.value = ''
+      importSuccess.value = ''
 
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -280,13 +288,27 @@ export default {
           if (data.backgroundSettings && typeof data.backgroundSettings === 'object') {
             updateBackgroundSettings(data.backgroundSettings)
           }
-          if (data.moduleConfigs) {
+          if (data.moduleConfigs && typeof data.moduleConfigs === 'object') {
+            // 替换语义:导入=恢复完整快照,清掉当前孤儿配置后再写入
+            Object.keys(moduleConfigs).forEach(k => delete moduleConfigs[k])
             Object.assign(moduleConfigs, data.moduleConfigs)
             saveModuleConfigs()
           }
+          // 主题:先恢复定时区间,再设模式,保证 applyTheme 用到正确区间
+          if (data.themeSchedule && typeof data.themeSchedule === 'object') {
+            updateThemeSchedule(data.themeSchedule)
+          }
+          if (['light', 'dark', 'auto', 'schedule'].includes(data.themeMode)) {
+            setThemeMode(data.themeMode)
+          }
+          if (data.clockSettings && typeof data.clockSettings === 'object') {
+            updateClockSettings(data.clockSettings)
+          }
           saveLayoutSettings()
           importError.value = ''
+          importSuccess.value = '导入成功'
         } catch (err) {
+          importSuccess.value = ''
           importError.value = '导入失败：无效的 JSON 文件'
         }
       }
@@ -295,9 +317,10 @@ export default {
     }
 
     const getModuleConfig = (m) => {
+      // 仅在内存里补默认值供渲染,不持久化:默认值是确定性的,渲染期写存储会在
+      // 加载竞态下覆盖已保存配置。真正的持久化交给 openConfig/updateConfig。
       if (!moduleConfigs[m.id]) {
         moduleConfigs[m.id] = { ...defaultModuleConfigs[m.type] }
-        saveModuleConfigs()
       }
       return moduleConfigs[m.id]
     }
@@ -401,7 +424,7 @@ export default {
 
     const updateBackgroundSettings = (partial) => {
       Object.assign(backgroundSettings, partial)
-      localStorage.setItem('backgroundSettings', JSON.stringify(backgroundSettings))
+      storageSet('backgroundSettings', backgroundSettings)
     }
 
     let darkMql = null
@@ -441,14 +464,14 @@ export default {
 
     const setThemeMode = (mode) => {
       themeMode.value = mode
-      localStorage.setItem('themeMode', mode)
+      storageSet('themeMode', mode)
       refreshThemeWatchers()
       applyTheme()
     }
 
     const updateThemeSchedule = (partial) => {
       Object.assign(themeSchedule, partial)
-      localStorage.setItem('themeSchedule', JSON.stringify(themeSchedule))
+      storageSet('themeSchedule', themeSchedule)
       applyTheme()
     }
 
@@ -459,7 +482,7 @@ export default {
 
     const updateClockSettings = (partial) => {
       Object.assign(clockSettings, partial)
-      localStorage.setItem('clockSettings', JSON.stringify(clockSettings))
+      storageSet('clockSettings', clockSettings)
     }
 
     watch(backgroundUrl, (newVal) => {
@@ -471,11 +494,8 @@ export default {
     })
 
     // 从 IndexedDB 加载背景;迁移旧的 localStorage.backgroundImage(base64)
-    const loadBackground = async () => {
-      try {
-        const bs = JSON.parse(localStorage.getItem('backgroundSettings') || '{}')
-        if (bs && typeof bs === 'object') Object.assign(backgroundSettings, bs)
-      } catch (e) { /* 忽略 */ }
+    const loadBackground = async (bsValue) => {
+      if (bsValue && typeof bsValue === 'object') Object.assign(backgroundSettings, bsValue)
 
       let blob = await getBackground()
       if (!blob) {
@@ -489,21 +509,12 @@ export default {
       if (blob) applyBackgroundBlob(blob)
     }
 
-    const loadLayoutSettings = () => {
-      const saved = localStorage.getItem('layoutSettings')
+    const loadLayoutSettings = (settings) => {
       const fallback = defaultLayout()
-      if (saved) {
-        try {
-          const settings = JSON.parse(saved)
-          topModules.value = isInstanceArray(settings.top) ? settings.top : fallback.top
-          leftModules.value = isInstanceArray(settings.left) ? settings.left : fallback.left
-          rightModules.value = isInstanceArray(settings.right) ? settings.right : fallback.right
-        } catch (e) {
-          console.error('布局设置解析失败:', e)
-          topModules.value = fallback.top
-          leftModules.value = fallback.left
-          rightModules.value = fallback.right
-        }
+      if (settings && typeof settings === 'object') {
+        topModules.value = isInstanceArray(settings.top) ? settings.top : fallback.top
+        leftModules.value = isInstanceArray(settings.left) ? settings.left : fallback.left
+        rightModules.value = isInstanceArray(settings.right) ? settings.right : fallback.right
       } else {
         topModules.value = fallback.top
         leftModules.value = fallback.left
@@ -512,28 +523,20 @@ export default {
     }
 
     const saveLayoutSettings = () => {
-      localStorage.setItem('layoutSettings', JSON.stringify({
+      storageSet('layoutSettings', {
         top: topModules.value,
         left: leftModules.value,
         right: rightModules.value
-      }))
+      })
     }
 
 
-    const loadModuleConfigs = () => {
-      const saved = localStorage.getItem('moduleConfigs')
-      if (saved) {
-        try {
-          const configs = JSON.parse(saved)
-          Object.assign(moduleConfigs, configs)
-        } catch (e) {
-          console.error('模块配置解析失败:', e)
-        }
-      }
+    const loadModuleConfigs = (configs) => {
+      if (configs && typeof configs === 'object') Object.assign(moduleConfigs, configs)
     }
 
     const saveModuleConfigs = () => {
-      localStorage.setItem('moduleConfigs', JSON.stringify(moduleConfigs))
+      storageSet('moduleConfigs', moduleConfigs)
     }
 
     const loadBookmarks = () => {
@@ -589,31 +592,38 @@ export default {
       return result
     }
 
-    onMounted(() => {
+    onMounted(async () => {
+      // 申请持久化存储,保护 IndexedDB 背景图/favicon 不被站点数据清理驱逐
+      requestPersistentStorage()
+
+      const store = await storageGet([
+        'themeMode', 'theme', 'themeSchedule', 'clockSettings',
+        'backgroundSettings', 'layoutSettings', 'moduleConfigs'
+      ])
+
       // 主题模式:优先读 themeMode,回退旧的 theme 值做迁移
-      const savedMode = localStorage.getItem('themeMode')
-      const legacyTheme = localStorage.getItem('theme')
+      const savedMode = store.themeMode
       themeMode.value = ['light', 'dark', 'auto', 'schedule'].includes(savedMode)
         ? savedMode
-        : (legacyTheme === 'dark' ? 'dark' : 'light')
-      try {
-        const savedSchedule = JSON.parse(localStorage.getItem('themeSchedule') || '{}')
-        if (savedSchedule && typeof savedSchedule === 'object') Object.assign(themeSchedule, savedSchedule)
-      } catch (e) { /* 忽略损坏的定时配置 */ }
+        : (store.theme === 'dark' ? 'dark' : 'light')
+      if (store.themeSchedule && typeof store.themeSchedule === 'object') {
+        Object.assign(themeSchedule, store.themeSchedule)
+      }
       if (typeof matchMedia !== 'undefined') {
         darkMql = matchMedia('(prefers-color-scheme: dark)')
         darkMql.addEventListener('change', applyTheme)
       }
       refreshThemeWatchers()
       applyTheme()
-      try {
-        const savedClock = JSON.parse(localStorage.getItem('clockSettings') || '{}')
-        if (savedClock && typeof savedClock === 'object') Object.assign(clockSettings, savedClock)
-      } catch (e) { /* 忽略损坏的时钟配置 */ }
-      loadLayoutSettings()
-      loadBackground()
-      loadModuleConfigs()
+      if (store.clockSettings && typeof store.clockSettings === 'object') {
+        Object.assign(clockSettings, store.clockSettings)
+      }
+      // 必须先填充模块配置,再放出模块实例:否则 await 间隙里模块先渲染,
+      // getModuleConfig 见配置为空会写默认值并覆盖存储,冲掉已保存的配置(如快速访问文件夹)
+      loadModuleConfigs(store.moduleConfigs)
+      loadLayoutSettings(store.layoutSettings)
       loadBookmarks()
+      await loadBackground(store.backgroundSettings)
     })
 
     return {
@@ -632,6 +642,7 @@ export default {
       bgStyle,
       videoStyle,
       importError,
+      importSuccess,
       backgroundSaveError,
       theme,
       isVideo,

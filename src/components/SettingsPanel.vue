@@ -121,6 +121,7 @@
       </div>
       <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
       <div v-if="importError" class="inline-error" style="padding: 0 20px 8px">{{ importError }}</div>
+      <div v-if="importSuccess" style="padding: 0 20px 8px; color: #16a34a; font-size: 13px">{{ importSuccess }}</div>
     </div>
 
     <!-- 可用模块 -->
@@ -251,6 +252,7 @@ const props = defineProps<{
   backgroundType?: string
   backgroundSettings?: BackgroundSettings
   importError?: string
+  importSuccess?: string
   backgroundSaveError?: string
   editingConfig?: ModuleConfig
   editingId?: string
